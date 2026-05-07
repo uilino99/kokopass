@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { doc, onSnapshot } from 'firebase/firestore';
-import { db, COLLECTIONS } from '../firebase.js';
+import { subscribeBatch } from '../utils/firestore.js';
 
 export default function Verify() {
   const { id } = useParams();
@@ -9,8 +8,8 @@ export default function Verify() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsub = onSnapshot(doc(db, COLLECTIONS.batches, id), (snap) => {
-      setBatch(snap.exists() ? { id: snap.id, ...snap.data() } : null);
+    const unsub = subscribeBatch(id, (b) => {
+      setBatch(b);
       setLoading(false);
     });
     return unsub;

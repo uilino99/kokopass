@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
-import { db, COLLECTIONS } from '../firebase.js';
-import { useAuth } from '../context/AuthContext.jsx';
+import { useAuth } from '../hooks/useAuth.js';
+import { getFarm, upsertFarm } from '../utils/firestore.js';
+import { validateFarm, hasErrors } from '../utils/validation.js';
 import LocationPicker from '../components/LocationPicker.jsx';
 
 const CROPS = ['Cacao', 'Coconut', 'Banana', 'Taro', 'Other'];
@@ -29,8 +29,8 @@ export default function FarmProfile() {
 
   useEffect(() => {
     (async () => {
-      const snap = await getDoc(doc(db, COLLECTIONS.farms, user.uid));
-      if (snap.exists()) setForm((f) => ({ ...f, ...snap.data() }));
+      const data = await getFarm(user.uid);
+      if (data) setForm((f) => ({ ...f, ...data }));
       setLoading(false);
     })();
   }, [user.uid]);
@@ -40,19 +40,14 @@ export default function FarmProfile() {
   const onSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    if (!form.location) return setError('Please drop a location pin or use GPS.');
+    const errs = validateFarm(form);
+    if (hasErrors(errs)) return setError(Object.values(errs)[0]);
     setBusy(true);
     try {
-      await setDoc(
-        doc(db, COLLECTIONS.farms, user.uid),
-        {
-          ...form,
-          sizeHectares: Number(form.sizeHectares) || 0,
-          ownerUid: user.uid,
-          updatedAt: serverTimestamp()
-        },
-        { merge: true }
-      );
+      await upsertFarm(user.uid, {
+        ...form,
+        sizeHectares: Number(form.sizeHectares) || 0
+      });
       setSaved(true);
       setTimeout(() => navigate('/dashboard'), 700);
     } catch (err) {

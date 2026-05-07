@@ -1,16 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import {
-  collection,
-  doc,
-  getDoc,
-  onSnapshot,
-  orderBy,
-  query,
-  where
-} from 'firebase/firestore';
-import { db, COLLECTIONS } from '../firebase.js';
-import { useAuth } from '../context/AuthContext.jsx';
+import { useAuth } from '../hooks/useAuth.js';
+import { getFarm, subscribeBatchesByOwner } from '../utils/firestore.js';
 
 export default function Dashboard() {
   const { user, profile } = useAuth();
@@ -21,16 +12,11 @@ export default function Dashboard() {
   useEffect(() => {
     let active = true;
     (async () => {
-      const fSnap = await getDoc(doc(db, COLLECTIONS.farms, user.uid));
-      if (active) setFarm(fSnap.exists() ? fSnap.data() : null);
+      const f = await getFarm(user.uid);
+      if (active) setFarm(f);
     })();
-    const q = query(
-      collection(db, COLLECTIONS.batches),
-      where('ownerUid', '==', user.uid),
-      orderBy('createdAt', 'desc')
-    );
-    const unsub = onSnapshot(q, (snap) => {
-      setBatches(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+    const unsub = subscribeBatchesByOwner(user.uid, (rows) => {
+      setBatches(rows);
       setLoading(false);
     });
     return () => {

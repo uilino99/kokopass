@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { doc, onSnapshot } from 'firebase/firestore';
 import { QRCodeCanvas } from 'qrcode.react';
-import { db, COLLECTIONS } from '../firebase.js';
+import { subscribeBatch } from '../utils/firestore.js';
 
 export default function BatchView() {
   const { id } = useParams();
@@ -11,8 +10,8 @@ export default function BatchView() {
   const qrWrap = useRef(null);
 
   useEffect(() => {
-    const unsub = onSnapshot(doc(db, COLLECTIONS.batches, id), (snap) => {
-      setBatch(snap.exists() ? { id: snap.id, ...snap.data() } : null);
+    const unsub = subscribeBatch(id, (b) => {
+      setBatch(b);
       setLoading(false);
     });
     return unsub;

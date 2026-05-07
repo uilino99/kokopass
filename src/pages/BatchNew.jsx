@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { addDoc, collection, doc, getDoc, serverTimestamp } from 'firebase/firestore';
-import { db, COLLECTIONS } from '../firebase.js';
-import { useAuth } from '../context/AuthContext.jsx';
+import { useAuth } from '../hooks/useAuth.js';
+import { createBatch, getFarm } from '../utils/firestore.js';
+import { validateBatch, hasErrors } from '../utils/validation.js';
 
 const QUALITY = ['A', 'B', 'C'];
 const PROCESSING = ['Wet beans', 'Fermented', 'Dried', 'Roasted'];
@@ -24,8 +24,7 @@ export default function BatchNew() {
 
   useEffect(() => {
     (async () => {
-      const snap = await getDoc(doc(db, COLLECTIONS.farms, user.uid));
-      setFarm(snap.exists() ? snap.data() : null);
+      setFarm(await getFarm(user.uid));
     })();
   }, [user.uid]);
 
@@ -35,11 +34,11 @@ export default function BatchNew() {
     e.preventDefault();
     setError('');
     if (!farm) return setError('Please complete your farm profile first.');
-    if (!form.weightKg || Number(form.weightKg) <= 0)
-      return setError('Enter a valid weight in kg.');
+    const errs = validateBatch(form);
+    if (hasErrors(errs)) return setError(Object.values(errs)[0]);
     setBusy(true);
     try {
-      const ref = await addDoc(collection(db, COLLECTIONS.batches), {
+      const id = await createBatch({
         ownerUid: user.uid,
         farmId: user.uid,
         farmName: farm.farmName,
@@ -52,11 +51,9 @@ export default function BatchNew() {
         quality: form.quality,
         processing: form.processing,
         moisturePct: form.moisturePct ? Number(form.moisturePct) : null,
-        notes: form.notes,
-        status: 'available',
-        createdAt: serverTimestamp()
+        notes: form.notes
       });
-      navigate(`/batches/${ref.id}`);
+      navigate(`/batches/${id}`);
     } catch (err) {
       setError(err.message || 'Could not save batch.');
     } finally {

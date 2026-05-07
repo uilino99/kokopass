@@ -51,5 +51,49 @@ service cloud.firestore {
       allow update, delete: if isSignedIn()
         && resource.data.ownerUid == request.auth.uid;
     }
+
+    // Transactions: payments / sales between farmers and exporters.
+    match /transactions/{txId} {
+      allow read: if isSignedIn() && (
+        resource.data.farmerUid == request.auth.uid ||
+        resource.data.exporterUid == request.auth.uid
+      );
+      allow create: if isSignedIn()
+        && userRole() == 'exporter'
+        && request.resource.data.exporterUid == request.auth.uid;
+      allow update: if isSignedIn()
+        && resource.data.exporterUid == request.auth.uid;
+      allow delete: if false;
+    }
+
+    // Weather alerts: server-written, broadly readable.
+    match /weather_alerts/{alertId} {
+      allow read: if true;
+      allow write: if false; // written by Cloud Functions / admin SDK
+    }
+
+    // Buyer portfolios: each buyer owns their dashboard config doc.
+    match /buyer_portfolios/{buyerId} {
+      allow read: if isOwner(buyerId);
+      allow create, update: if isOwner(buyerId)
+        && userRole() == 'buyer'
+        && request.resource.data.ownerUid == request.auth.uid;
+      allow delete: if false;
+    }
+
+    // AI predictions: server-written, owner-readable.
+    match /ai_predictions/{predId} {
+      allow read: if isSignedIn()
+        && resource.data.ownerUid == request.auth.uid;
+      allow write: if false; // written by Cloud Functions / admin SDK
+    }
+
+    // Audit logs: append-only, never client-readable.
+    match /audit_logs/{logId} {
+      allow read: if false;
+      allow create: if isSignedIn()
+        && request.resource.data.actorUid == request.auth.uid;
+      allow update, delete: if false;
+    }
   }
 }
