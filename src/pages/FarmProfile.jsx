@@ -62,15 +62,17 @@ export default function FarmProfile() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <div className="mx-auto max-w-2xl space-y-8">
       <div>
-        <h1 className="text-2xl font-bold">Your farm</h1>
-        <p className="text-sm text-koko-mist/80">
-          This information shows up on every QR-verified bag.
+        <p className="eyebrow">Your origin</p>
+        <h1 className="mt-2 font-display text-4xl sm:text-5xl">Farm profile</h1>
+        <div className="rule-gold mt-4 max-w-xs" />
+        <p className="mt-4 text-sm text-koko-mist/85">
+          This story travels with every QR-verified bag — buyers will see it when they scan.
         </p>
       </div>
 
-      <form onSubmit={onSubmit} className="card space-y-5">
+      <form onSubmit={onSubmit} className="card-elevated space-y-6">
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label className="label">Farm name</label>

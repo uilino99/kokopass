@@ -35,48 +35,64 @@ export default function BatchView() {
   if (!batch) return <p className="text-red-300">Batch not found.</p>;
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Batch QR pass</h1>
+    <div className="mx-auto max-w-3xl space-y-8">
+      <div className="flex items-center justify-between no-print">
+        <div>
+          <p className="eyebrow">Provenance pass</p>
+          <h1 className="mt-2 font-display text-4xl sm:text-5xl">Batch QR</h1>
+        </div>
         <Link to="/dashboard" className="btn-ghost">← Back</Link>
       </div>
 
-      <div className="card grid items-center gap-6 sm:grid-cols-[auto_1fr]">
-        <div ref={qrWrap} className="rounded-2xl bg-white p-4">
-          <QRCodeCanvas
-            value={verifyUrl}
-            size={220}
-            level="H"
-            includeMargin={false}
-          />
+      <article className="card-elevated grid gap-8 sm:grid-cols-[auto_1fr] sm:items-center">
+        <div className="mx-auto flex flex-col items-center gap-3">
+          <div ref={qrWrap} className="rounded-2xl bg-white p-4 shadow-gold">
+            <QRCodeCanvas value={verifyUrl} size={220} level="H" includeMargin={false} />
+          </div>
+          <p className="text-[10px] uppercase tracking-wider2 text-koko-mist/70">
+            Scan to verify
+          </p>
         </div>
-        <div className="space-y-2 text-sm">
-          <div>
-            <div className="text-koko-mist/60">Batch ID</div>
-            <div className="font-mono text-white break-all">{batch.id}</div>
-          </div>
-          <div>
-            <div className="text-koko-mist/60">Farm</div>
-            <div className="text-white">{batch.farmName} · {batch.village}</div>
-          </div>
-          <div>
-            <div className="text-koko-mist/60">Harvest</div>
-            <div className="text-white">
-              {batch.harvestDate} · {batch.weightKg} kg · Grade {batch.quality}
-            </div>
-          </div>
-          <div>
-            <div className="text-koko-mist/60">Verify URL</div>
-            <a href={verifyUrl} className="text-koko-accent break-all hover:underline">{verifyUrl}</a>
+        <div>
+          <p className="eyebrow">Verified by KokoPass</p>
+          <h2 className="mt-2 font-display text-3xl">
+            {batch.farmName}
+            <span className="block text-base font-sans font-medium not-italic text-koko-mist/85">
+              {batch.village}, Samoa
+            </span>
+          </h2>
+          <div className="rule-gold my-5" />
+          <dl className="grid grid-cols-2 gap-3 text-sm">
+            <Field label="Harvest" value={batch.harvestDate} />
+            <Field label="Weight" value={`${batch.weightKg} kg`} />
+            <Field label="Grade" value={batch.quality} />
+            <Field label="Processing" value={batch.processing} />
+            {batch.variety && <Field label="Variety" value={batch.variety} />}
+            {batch.moisturePct != null && (
+              <Field label="Moisture" value={`${batch.moisturePct}%`} />
+            )}
+          </dl>
+          <div className="mt-5 text-xs text-koko-mist/60">
+            <span className="text-koko-mist/40">Batch ID</span>
+            <div className="mt-1 break-all font-mono text-koko-ivory">{batch.id}</div>
           </div>
         </div>
-      </div>
+      </article>
 
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap gap-3 no-print">
         <button onClick={downloadPng} className="btn-primary">⬇ Download PNG</button>
         <button onClick={printQr} className="btn-secondary">🖨 Print label</button>
-        <Link to="/batches/new" className="btn-secondary">+ Record another batch</Link>
+        <Link to="/batches/new" className="btn-secondary">+ Record another</Link>
       </div>
+    </div>
+  );
+}
+
+function Field({ label, value }) {
+  return (
+    <div>
+      <dt className="text-[10px] uppercase tracking-wider2 text-koko-mist/55">{label}</dt>
+      <dd className="mt-0.5 text-koko-ivory">{value}</dd>
     </div>
   );
 }

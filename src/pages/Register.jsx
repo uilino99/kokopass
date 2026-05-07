@@ -34,9 +34,13 @@ export default function Register() {
 
   return (
     <div className="mx-auto max-w-md">
-      <div className="card">
-        <h1 className="text-2xl font-bold">Create your KokoPass account</h1>
-        <p className="mt-1 text-sm text-koko-mist/80">
+      <div className="card-elevated">
+        <p className="eyebrow text-center">Join KokoPass</p>
+        <h1 className="mt-2 text-center font-display text-3xl sm:text-4xl">
+          Create your account
+        </h1>
+        <div className="divider-gold mt-3" />
+        <p className="mt-4 text-center text-sm text-koko-mist/85">
           Start tracing your cacao in minutes.
         </p>
         <form onSubmit={onSubmit} className="mt-6 space-y-4">
@@ -69,9 +73,9 @@ export default function Register() {
             {busy ? 'Creating account…' : 'Create account'}
           </button>
         </form>
-        <p className="mt-4 text-center text-sm text-koko-mist/70">
+        <p className="mt-6 text-center text-sm text-koko-mist/70">
           Already have an account?{' '}
-          <Link to="/login" className="text-koko-accent hover:underline">Sign in</Link>
+          <Link to="/login" className="text-koko-gold hover:underline">Sign in</Link>
         </p>
       </div>
     </div>

@@ -62,11 +62,13 @@ export default function BatchNew() {
   };
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <div className="mx-auto max-w-2xl space-y-8">
       <div>
-        <h1 className="text-2xl font-bold">Record a new batch</h1>
-        <p className="text-sm text-koko-mist/80">
-          Each batch gets a unique QR code that buyers can scan to verify origin.
+        <p className="eyebrow">New harvest</p>
+        <h1 className="mt-2 font-display text-4xl sm:text-5xl">Record a batch</h1>
+        <div className="rule-gold mt-4 max-w-xs" />
+        <p className="mt-4 text-sm text-koko-mist/85">
+          Every batch becomes a scannable provenance pass — verifiable by any buyer, anywhere.
         </p>
       </div>
 
@@ -77,7 +79,7 @@ export default function BatchNew() {
         </div>
       )}
 
-      <form onSubmit={onSubmit} className="card space-y-5">
+      <form onSubmit={onSubmit} className="card-elevated space-y-6">
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label className="label">Harvest date</label>

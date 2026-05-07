@@ -26,26 +26,43 @@ export default function Login() {
 
   return (
     <div className="mx-auto max-w-md">
-      <div className="card">
-        <h1 className="text-2xl font-bold">Welcome back</h1>
-        <p className="mt-1 text-sm text-koko-mist/80">Sign in to continue.</p>
-        <form onSubmit={onSubmit} className="mt-6 space-y-4">
+      <div className="card-elevated">
+        <p className="eyebrow text-center">Welcome back</p>
+        <h1 className="mt-2 text-center font-display text-3xl sm:text-4xl">Sign in</h1>
+        <div className="divider-gold mt-3" />
+        <form onSubmit={onSubmit} className="mt-8 space-y-5">
           <div>
             <label className="label">Email</label>
-            <input className="input" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+            <input
+              className="input"
+              type="email"
+              required
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
           </div>
           <div>
             <label className="label">Password</label>
-            <input className="input" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+            <input
+              className="input"
+              type="password"
+              required
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
           </div>
           {error && <p className="text-sm text-red-300">{error}</p>}
           <button className="btn-primary w-full" disabled={busy}>
             {busy ? 'Signing in…' : 'Sign in'}
           </button>
         </form>
-        <p className="mt-4 text-center text-sm text-koko-mist/70">
-          New here?{' '}
-          <Link to="/register" className="text-koko-accent hover:underline">Create an account</Link>
+        <p className="mt-6 text-center text-sm text-koko-mist/70">
+          New to KokoPass?{' '}
+          <Link to="/register" className="text-koko-gold hover:underline">
+            Create an account
+          </Link>
         </p>
       </div>
     </div>
