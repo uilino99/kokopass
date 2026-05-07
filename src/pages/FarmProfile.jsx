@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.js';
+import { useToast } from '../components/Toast.jsx';
 import { getFarm, upsertFarm } from '../utils/firestore.js';
 import { validateFarm, hasErrors } from '../utils/validation.js';
 import LocationPicker from '../components/LocationPicker.jsx';
+import Spinner, { FullPageSpinner } from '../components/Spinner.jsx';
 
 const CROPS = ['Cacao', 'Coconut', 'Banana', 'Taro', 'Other'];
 const VARIETIES = ['Trinitario', 'Criollo', 'Forastero', 'Mixed', 'Unknown'];
@@ -11,6 +13,7 @@ const VARIETIES = ['Trinitario', 'Criollo', 'Forastero', 'Mixed', 'Unknown'];
 export default function FarmProfile() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const toast = useToast();
 
   const [form, setForm] = useState({
     farmName: '',
@@ -24,8 +27,7 @@ export default function FarmProfile() {
   });
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [error, setError] = useState('');
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     (async () => {
@@ -35,113 +37,137 @@ export default function FarmProfile() {
     })();
   }, [user.uid]);
 
-  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+  const set = (k) => (e) => {
+    setForm((f) => ({ ...f, [k]: e.target.value }));
+    if (errors[k]) setErrors((s) => ({ ...s, [k]: undefined }));
+  };
 
   const onSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-    const errs = validateFarm(form);
-    if (hasErrors(errs)) return setError(Object.values(errs)[0]);
+    const v = validateFarm(form);
+    setErrors(v);
+    if (hasErrors(v)) {
+      toast.error(Object.values(v)[0]);
+      return;
+    }
     setBusy(true);
     try {
       await upsertFarm(user.uid, {
         ...form,
         sizeHectares: Number(form.sizeHectares) || 0
       });
-      setSaved(true);
-      setTimeout(() => navigate('/dashboard'), 700);
+      toast.success('Farm saved.');
+      setTimeout(() => navigate('/dashboard'), 400);
     } catch (err) {
-      setError(err.message || 'Could not save farm.');
+      toast.error(err.message || 'Could not save farm.');
     } finally {
       setBusy(false);
     }
   };
 
-  if (loading) {
-    return <p className="text-koko-mist/70">Loading farm…</p>;
-  }
+  if (loading) return <FullPageSpinner label="Loading your farm" />;
 
   return (
-    <div className="mx-auto max-w-2xl space-y-8">
-      <div>
+    <div className="mx-auto max-w-2xl space-y-8 page">
+      <header className="animate-slide-up">
         <p className="eyebrow">Your origin</p>
-        <h1 className="mt-2 font-display text-4xl sm:text-5xl">Farm profile</h1>
-        <div className="rule-gold mt-4 max-w-xs" />
-        <p className="mt-4 text-sm text-koko-mist/85">
+        <h1 className="mt-2 font-display text-4xl text-koko-ink sm:text-5xl">Farm profile</h1>
+        <div className="divider-teal mt-4 ml-0" />
+        <p className="mt-4 text-sm text-koko-body">
           This story travels with every QR-verified bag — buyers will see it when they scan.
         </p>
-      </div>
+      </header>
 
-      <form onSubmit={onSubmit} className="card-elevated space-y-6">
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label className="label">Farm name</label>
-            <input className="input" required value={form.farmName} onChange={set('farmName')} />
-          </div>
-          <div>
-            <label className="label">Village</label>
-            <input className="input" required value={form.village} onChange={set('village')} />
-          </div>
-          <div>
-            <label className="label">District</label>
-            <input className="input" value={form.district} onChange={set('district')} />
-          </div>
-          <div>
-            <label className="label">Size (hectares)</label>
+      <form onSubmit={onSubmit} noValidate className="card-elevated space-y-6 animate-slide-up">
+        <div className="grid gap-5 sm:grid-cols-2">
+          <Field label="Farm name" id="farmName" error={errors.farmName} required>
             <input
-              className="input"
+              id="farmName"
+              className={`input ${errors.farmName ? 'input-error' : ''}`}
+              value={form.farmName}
+              onChange={set('farmName')}
+            />
+          </Field>
+          <Field label="Village" id="village" error={errors.village} required>
+            <input
+              id="village"
+              className={`input ${errors.village ? 'input-error' : ''}`}
+              value={form.village}
+              onChange={set('village')}
+            />
+          </Field>
+          <Field label="District" id="district">
+            <input id="district" className="input" value={form.district} onChange={set('district')} />
+          </Field>
+          <Field label="Size (hectares)" id="size">
+            <input
+              id="size"
               type="number"
               step="0.1"
               min="0"
+              className="input"
               value={form.sizeHectares}
               onChange={set('sizeHectares')}
             />
-          </div>
-          <div>
-            <label className="label">Primary crop</label>
-            <select className="input" value={form.crop} onChange={set('crop')}>
-              {CROPS.map((c) => (
-                <option key={c}>{c}</option>
-              ))}
+          </Field>
+          <Field label="Primary crop" id="crop">
+            <select id="crop" className="input" value={form.crop} onChange={set('crop')}>
+              {CROPS.map((c) => <option key={c}>{c}</option>)}
             </select>
-          </div>
-          <div>
-            <label className="label">Variety</label>
-            <select className="input" value={form.variety} onChange={set('variety')}>
-              {VARIETIES.map((v) => (
-                <option key={v}>{v}</option>
-              ))}
+          </Field>
+          <Field label="Variety" id="variety">
+            <select id="variety" className="input" value={form.variety} onChange={set('variety')}>
+              {VARIETIES.map((v) => <option key={v}>{v}</option>)}
             </select>
-          </div>
+          </Field>
         </div>
 
-        <div>
-          <label className="label">Your story (shown to buyers)</label>
+        <Field label="Your story (shown to buyers)" id="story" hint="A few sentences about your farm and family.">
           <textarea
-            className="input min-h-[100px]"
+            id="story"
+            className="input"
             value={form.story}
             onChange={set('story')}
-            placeholder="A few sentences about your farm and family…"
+            placeholder="Talofa! Our family has grown cacao on the slopes above…"
           />
-        </div>
+        </Field>
 
-        <div>
-          <label className="label">Farm location</label>
+        <Field label="Farm location" id="location" error={errors.location} required>
           <LocationPicker
             value={form.location}
-            onChange={(loc) => setForm((f) => ({ ...f, location: loc }))}
+            onChange={(loc) => {
+              setForm((f) => ({ ...f, location: loc }));
+              if (errors.location) setErrors((s) => ({ ...s, location: undefined }));
+            }}
           />
-        </div>
+        </Field>
 
-        {error && <p className="text-sm text-red-300">{error}</p>}
-        {saved && <p className="text-sm text-emerald-300">Saved ✔</p>}
-
-        <div className="flex justify-end">
-          <button className="btn-primary" disabled={busy}>
-            {busy ? 'Saving…' : 'Save farm'}
+        <div className="flex justify-end gap-2 pt-2">
+          <button
+            type="button"
+            onClick={() => navigate('/dashboard')}
+            className="btn-secondary"
+          >
+            Cancel
+          </button>
+          <button className="btn-accent" disabled={busy}>
+            {busy && <Spinner size="sm" />} {busy ? 'Saving…' : 'Save farm'}
           </button>
         </div>
       </form>
+    </div>
+  );
+}
+
+function Field({ label, id, hint, error, required, children }) {
+  return (
+    <div>
+      <label htmlFor={id} className="label">
+        {label} {required && <span className="text-koko-error">*</span>}
+      </label>
+      {children}
+      {hint && !error && <p className="helper">{hint}</p>}
+      {error && <p className="error-text" role="alert"><span aria-hidden>!</span> {error}</p>}
     </div>
   );
 }

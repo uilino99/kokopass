@@ -47,11 +47,15 @@ export default function LocationPicker({ value, onChange }) {
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-koko-mist/80">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-sm text-koko-muted">
           Tap the map to drop a pin, or use your device GPS.
         </p>
-        <button type="button" onClick={useGps} className="btn-secondary !py-2 !px-3 text-sm">
+        <button
+          type="button"
+          onClick={useGps}
+          className="btn-secondary !min-h-[40px] !px-3 !py-2 text-sm"
+        >
           📍 Use GPS
         </button>
       </div>
@@ -70,7 +74,7 @@ export default function LocationPicker({ value, onChange }) {
         {position && <Recenter position={position} />}
       </MapContainer>
       {position && (
-        <p className="text-xs text-koko-mist/60">
+        <p className="text-xs font-mono text-koko-muted">
           Lat {position[0].toFixed(5)}, Lng {position[1].toFixed(5)}
         </p>
       )}

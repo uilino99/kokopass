@@ -2,80 +2,182 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ---------- Base ---------- */
 @layer base {
   html, body, #root { height: 100%; }
+  html { scroll-behavior: smooth; }
   body {
-    @apply bg-koko-ink text-koko-ivory font-sans antialiased;
-    background-image:
-      radial-gradient(60% 40% at 50% -10%, rgba(212, 166, 74, 0.10), transparent 70%),
-      radial-gradient(45% 30% at 100% 110%, rgba(91, 58, 26, 0.22), transparent 70%);
-    background-attachment: fixed;
+    @apply bg-koko-bg text-koko-body font-sans antialiased;
+    font-feature-settings: 'cv11', 'ss01';
+    -webkit-tap-highlight-color: transparent;
   }
-  h1, h2, h3 {
-    @apply font-display text-white;
-    letter-spacing: -0.01em;
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: -1;
+    background:
+      radial-gradient(50% 35% at 80% 0%, rgba(29,158,117,0.06), transparent 70%),
+      radial-gradient(45% 30% at 0% 100%, rgba(0,51,102,0.07), transparent 70%);
   }
-  ::selection {
-    background: rgba(212, 166, 74, 0.35);
-    color: #fff;
+  h1, h2, h3, h4 {
+    @apply font-display text-koko-ink;
+    font-weight: 600;
   }
+  h1 { @apply text-4xl sm:text-6xl; }
+  h2 { @apply text-3xl sm:text-4xl; }
+  h3 { @apply text-xl sm:text-2xl; }
+  ::selection { background: rgba(29,158,117,0.25); color: #0F1B2D; }
+
+  /* Visible focus everywhere — accessibility */
+  :focus-visible {
+    outline: none;
+  }
+  a, button, [role='button'] {
+    -webkit-tap-highlight-color: rgba(29,158,117,0.15);
+  }
+
+  /* Native form sanity */
+  input, select, textarea, button { font: inherit; color: inherit; }
 }
 
+/* ---------- Components ---------- */
 @layer components {
+  /* Buttons — 48px touch target, focus ring, press feedback */
+  .btn {
+    @apply inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold tracking-tight transition-all duration-150 ease-out-quint
+           active:scale-[0.985] disabled:cursor-not-allowed disabled:opacity-60;
+  }
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-full bg-gold-grad px-6 py-3 text-sm font-semibold uppercase tracking-wider2 text-koko-ink shadow-gold transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50;
+    @apply btn bg-koko-navy text-white shadow-md hover:bg-koko-navy600 focus-visible:shadow-ringNavy;
+  }
+  .btn-accent {
+    @apply btn bg-koko-teal text-white shadow-md hover:bg-koko-teal600 focus-visible:shadow-ringTeal;
   }
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 rounded-full border border-koko-gold/40 bg-koko-noir/60 px-6 py-3 text-sm font-medium uppercase tracking-wider2 text-koko-ivory transition hover:border-koko-gold hover:text-koko-gold disabled:opacity-50;
+    @apply btn border border-koko-border bg-white text-koko-navy shadow-sm
+           hover:border-koko-navy hover:bg-koko-bg focus-visible:shadow-ringNavy;
   }
   .btn-ghost {
-    @apply inline-flex items-center justify-center rounded-full px-3 py-2 text-sm text-koko-mist transition hover:text-koko-gold;
+    @apply btn min-h-[40px] !px-3 text-koko-body hover:bg-koko-borderSoft hover:text-koko-navy focus-visible:shadow-ringNavy;
   }
+  .btn-danger {
+    @apply btn bg-koko-error text-white shadow-md hover:bg-red-700 focus-visible:shadow-ringError;
+  }
+
+  /* Inputs */
   .input {
-    @apply w-full rounded-xl border border-koko-mist/15 bg-koko-noir/80 px-4 py-3 text-koko-ivory placeholder:text-koko-mist/50 transition focus:border-koko-gold/70 focus:outline-none focus:ring-2 focus:ring-koko-gold/25;
+    @apply block w-full rounded-xl border border-koko-border bg-white px-4 py-3 text-koko-ink placeholder:text-koko-faint
+           shadow-sm transition focus:border-koko-teal focus:outline-none focus:ring-4 focus:ring-koko-teal/15
+           disabled:cursor-not-allowed disabled:bg-koko-bg;
+    min-height: 48px;
   }
+  .input-error {
+    @apply border-koko-error focus:border-koko-error focus:ring-koko-error/15;
+  }
+  textarea.input { min-height: 96px; }
+
+  /* Labels & helper text */
   .label {
-    @apply mb-1 block text-[11px] font-semibold uppercase tracking-wider2 text-koko-mist;
+    @apply mb-1.5 block text-sm font-semibold text-koko-ink;
   }
+  .helper {
+    @apply mt-1.5 text-xs text-koko-muted;
+  }
+  .error-text {
+    @apply mt-1.5 flex items-center gap-1 text-sm text-koko-error;
+  }
+
+  /* Cards */
   .card {
-    @apply rounded-2xl border border-koko-mist/10 bg-koko-noir/85 p-6 shadow-koko backdrop-blur-sm;
+    @apply rounded-2xl border border-koko-border bg-white p-6 shadow-sm transition-shadow;
   }
   .card-elevated {
-    @apply card relative overflow-hidden;
+    @apply card shadow-md;
   }
-  .badge {
-    @apply inline-flex items-center rounded-full border border-koko-gold/40 bg-koko-gold/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider2 text-koko-gold;
+  .card-hover {
+    @apply card transition-all duration-200 ease-out-quint hover:-translate-y-0.5 hover:shadow-md;
   }
+
+  /* Eyebrow */
   .eyebrow {
-    @apply text-[11px] font-semibold uppercase tracking-wider2 text-koko-gold;
+    @apply text-xs font-semibold uppercase tracking-widest text-koko-teal;
   }
-  .divider-gold {
+
+  /* Badges */
+  .badge {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold;
+  }
+  .badge-teal { @apply badge bg-koko-teal100 text-koko-teal600; }
+  .badge-navy { @apply badge bg-koko-infoBg text-koko-navy; }
+  .badge-success { @apply badge bg-koko-successBg text-koko-success; }
+  .badge-error { @apply badge bg-koko-errorBg text-koko-error; }
+  .badge-warning { @apply badge bg-koko-warningBg text-koko-warning; }
+
+  /* Dividers */
+  .divider {
+    @apply my-6 h-px w-full bg-koko-border;
+  }
+  .divider-teal {
     @apply mx-auto h-px w-16;
-    background: linear-gradient(90deg, transparent, #d4a64a, transparent);
+    background: linear-gradient(90deg, transparent, #1D9E75, transparent);
   }
-  .rule-gold {
-    @apply h-px w-full;
-    background: linear-gradient(90deg, transparent, rgba(212, 166, 74, 0.5), transparent);
+
+  /* Toast */
+  .toast {
+    @apply pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-xl border border-koko-border bg-white p-4 shadow-lg
+           animate-slide-in-right;
   }
+  .toast-success { @apply border-l-4 border-l-koko-success; }
+  .toast-error { @apply border-l-4 border-l-koko-error; }
+  .toast-info { @apply border-l-4 border-l-koko-navy; }
+
+  /* Skeleton */
+  .skeleton {
+    @apply relative overflow-hidden rounded-md bg-koko-borderSoft;
+  }
+  .skeleton::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
+    animation: shimmer 1.6s ease-in-out infinite;
+  }
+
+  /* Spinner */
+  .spinner {
+    @apply inline-block h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent;
+  }
+
+  /* Section helpers */
+  .section { @apply space-y-12 sm:space-y-16; }
+  .container-app { @apply mx-auto w-full max-w-6xl px-5; }
+
+  /* Page wrapper */
+  .page { @apply animate-fade-in; }
 }
 
-.card-elevated::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 1.25rem;
-  right: 1.25rem;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(212, 166, 74, 0.7), transparent);
-  pointer-events: none;
-}
-
+/* ---------- Misc ---------- */
 .leaflet-container {
   height: 280px;
   width: 100%;
   border-radius: 1rem;
-  border: 1px solid rgba(212, 166, 74, 0.18);
+  border: 1px solid #E3E8EE;
   z-index: 0;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
 }
 
 @media print {

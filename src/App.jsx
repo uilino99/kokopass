@@ -50,7 +50,16 @@ export default function App() {
             </ProtectedRoute>
           }
         />
-        <Route path="*" element={<p className="text-koko-mist/70">404 — page not found.</p>} />
+        <Route
+          path="*"
+          element={
+            <div className="card text-center">
+              <p className="eyebrow">404</p>
+              <h1 className="mt-2 font-display text-3xl text-koko-ink">Page not found</h1>
+              <p className="mt-2 text-sm text-koko-body">The page you're looking for doesn't exist.</p>
+            </div>
+          }
+        />
       </Routes>
     </Layout>
   );
