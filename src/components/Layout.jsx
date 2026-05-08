@@ -1,6 +1,9 @@
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.js';
 import { useToast } from './Toast.jsx';
+import BottomNav from './BottomNav.jsx';
+import InstallPrompt from './InstallPrompt.jsx';
+import OfflineBanner from './OfflineBanner.jsx';
 
 export default function Layout({ children }) {
   const { user, profile, logout } = useAuth();
@@ -39,14 +42,15 @@ export default function Layout({ children }) {
           </Link>
 
           {user ? (
-            <nav className="flex items-center gap-1 sm:gap-2">
+            // Top nav is desktop-only when signed in — bottom nav owns mobile.
+            <nav className="hidden items-center gap-1 md:flex md:gap-2">
               <NavLink to="/dashboard" className={linkClass}>Dashboard</NavLink>
               {profile?.role === 'exporter' ? (
                 <>
                   <NavLink to="/exporter" className={linkClass}>Shipments</NavLink>
                   <Link
                     to="/exporter/shipments/new"
-                    className="btn-accent !min-h-[40px] !px-4 !py-2 hidden sm:inline-flex"
+                    className="btn-accent !min-h-[40px] !px-4 !py-2"
                   >
                     + Shipment
                   </Link>
@@ -56,7 +60,7 @@ export default function Layout({ children }) {
                   <NavLink to="/farm" className={linkClass}>Farm</NavLink>
                   <Link
                     to="/batches/new"
-                    className="btn-accent !min-h-[40px] !px-4 !py-2 hidden sm:inline-flex"
+                    className="btn-accent !min-h-[40px] !px-4 !py-2"
                   >
                     + Batch
                   </Link>
@@ -74,7 +78,7 @@ export default function Layout({ children }) {
           )}
         </div>
         {profile && (
-          <div className="container-app -mt-1 flex items-center gap-2 pb-2 text-xs text-koko-muted">
+          <div className="container-app -mt-1 hidden items-center gap-2 pb-2 text-xs text-koko-muted md:flex">
             <span>Signed in as</span>
             <span className="font-medium text-koko-ink">{profile.fullName}</span>
             <span className="text-koko-faint">·</span>
@@ -83,13 +87,25 @@ export default function Layout({ children }) {
         )}
       </header>
 
-      <main className="container-app py-8 sm:py-12 page">{children}</main>
+      <OfflineBanner />
 
-      <footer className="border-t border-koko-border bg-white py-8 text-center text-xs text-koko-muted no-print">
+      <main
+        className="container-app py-8 sm:py-12 page"
+        style={{
+          paddingBottom: user ? 'calc(6rem + env(safe-area-inset-bottom))' : undefined
+        }}
+      >
+        {children}
+      </main>
+
+      <footer className="hidden border-t border-koko-border bg-white py-8 text-center text-xs text-koko-muted md:block no-print">
         <div className="container-app">
           © {new Date().getFullYear()} KokoPass · Crafted with care from Samoa 🇼🇸
         </div>
       </footer>
+
+      <BottomNav user={user} profile={profile} onLogout={handleLogout} />
+      <InstallPrompt />
     </div>
   );
 }
