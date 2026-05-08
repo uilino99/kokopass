@@ -5,13 +5,14 @@ import { useToast } from '../components/Toast.jsx';
 import { getFarm, upsertFarm } from '../utils/firestore.js';
 import { validateFarm, hasErrors } from '../utils/validation.js';
 import LocationPicker from '../components/LocationPicker.jsx';
+import PhotoUpload from '../components/PhotoUpload.jsx';
 import Spinner, { FullPageSpinner } from '../components/Spinner.jsx';
 
 const CROPS = ['Cacao', 'Coconut', 'Banana', 'Taro', 'Other'];
 const VARIETIES = ['Trinitario', 'Criollo', 'Forastero', 'Mixed', 'Unknown'];
 
 export default function FarmProfile() {
-  const { user } = useAuth();
+  const { user, profile, updateProfile } = useAuth();
   const navigate = useNavigate();
   const toast = useToast();
 
@@ -23,8 +24,10 @@ export default function FarmProfile() {
     variety: 'Trinitario',
     sizeHectares: '',
     story: '',
-    location: null
+    location: null,
+    heroUrl: null
   });
+  const [avatarUrl, setAvatarUrl] = useState(profile?.avatarUrl || null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [errors, setErrors] = useState({});
@@ -56,6 +59,10 @@ export default function FarmProfile() {
         ...form,
         sizeHectares: Number(form.sizeHectares) || 0
       });
+      // Persist avatar onto the user profile too so other pages see it.
+      if (avatarUrl !== (profile?.avatarUrl || null)) {
+        await updateProfile({ avatarUrl: avatarUrl || null });
+      }
       toast.success('Farm saved.');
       setTimeout(() => navigate('/dashboard'), 400);
     } catch (err) {
@@ -79,6 +86,31 @@ export default function FarmProfile() {
       </header>
 
       <form onSubmit={onSubmit} noValidate className="card-elevated space-y-6 animate-slide-up">
+        <div className="grid gap-5 sm:grid-cols-[140px_1fr]">
+          <div>
+            <label className="label">Your photo</label>
+            <PhotoUpload
+              value={avatarUrl}
+              onChange={setAvatarUrl}
+              path={`users/${user.uid}/avatar`}
+              label="Add photo"
+              hint="A friendly face builds trust"
+              aspect="square"
+            />
+          </div>
+          <div>
+            <label className="label">Farm hero photo</label>
+            <PhotoUpload
+              value={form.heroUrl}
+              onChange={(url) => setForm((f) => ({ ...f, heroUrl: url }))}
+              path={`farms/${user.uid}/hero`}
+              label="Add a wide farm photo"
+              hint="Shown to buyers when they scan"
+              aspect="landscape"
+            />
+          </div>
+        </div>
+
         <div className="grid gap-5 sm:grid-cols-2">
           <Field label="Farm name" id="farmName" error={errors.farmName} required>
             <input

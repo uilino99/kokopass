@@ -1,16 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.js';
 import { useToast } from '../components/Toast.jsx';
-import { createBatch, getFarm } from '../utils/firestore.js';
+import { getFarm, newBatchId, setBatch } from '../utils/firestore.js';
 import { validateBatch, hasErrors } from '../utils/validation.js';
+import PhotoGallery from '../components/PhotoGallery.jsx';
 import Spinner from '../components/Spinner.jsx';
 
 const QUALITY = ['A', 'B', 'C'];
 const PROCESSING = ['Wet beans', 'Fermented', 'Dried', 'Roasted'];
 
 export default function BatchNew() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const navigate = useNavigate();
   const toast = useToast();
   const [farm, setFarm] = useState(null);
@@ -21,10 +22,15 @@ export default function BatchNew() {
     quality: 'A',
     processing: 'Fermented',
     moisturePct: '',
-    notes: ''
+    notes: '',
+    photoUrls: []
   });
   const [errors, setErrors] = useState({});
   const [busy, setBusy] = useState(false);
+
+  // Pre-generate the batch ID so we can upload photos to a known
+  // batches/{ownerUid}/{batchId}/ path before the doc is written.
+  const batchId = useMemo(() => newBatchId(), []);
 
   useEffect(() => {
     (async () => {
@@ -52,23 +58,31 @@ export default function BatchNew() {
     }
     setBusy(true);
     try {
-      const id = await createBatch({
+      await setBatch(batchId, {
         ownerUid: user.uid,
         farmId: user.uid,
         farmName: farm.farmName,
         village: farm.village || '',
+        district: farm.district || '',
         crop: farm.crop || 'Cacao',
         variety: farm.variety || '',
         location: farm.location || null,
+        // Snapshot farmer + farm presentation onto the batch so the
+        // public /verify page can render without reading private user docs.
+        farmerName: profile?.fullName || '',
+        farmerAvatarUrl: profile?.avatarUrl || null,
+        farmHeroUrl: farm.heroUrl || null,
+        farmStory: farm.story || '',
         harvestDate: form.harvestDate,
         weightKg: Number(form.weightKg),
         quality: form.quality,
         processing: form.processing,
         moisturePct: form.moisturePct ? Number(form.moisturePct) : null,
-        notes: form.notes
+        notes: form.notes,
+        photoUrls: form.photoUrls
       });
       toast.success('Batch recorded. Generating QR pass…');
-      navigate(`/batches/${id}`);
+      navigate(`/batches/${batchId}`);
     } catch (err) {
       toast.error(err.message || 'Could not save batch.');
     } finally {
@@ -160,6 +174,20 @@ export default function BatchNew() {
             placeholder="Anything notable about this lot…"
           />
         </Field>
+
+        <div>
+          <label className="label">Batch photos</label>
+          <p className="helper mb-2">
+            Up to 3 photos — drying mats, fermentation, sacks. Buyers love seeing the work.
+          </p>
+          <PhotoGallery
+            value={form.photoUrls}
+            onChange={(urls) => setForm((f) => ({ ...f, photoUrls: urls }))}
+            basePath={`batches/${user.uid}/${batchId}`}
+            max={3}
+            label="Add"
+          />
+        </div>
 
         <div className="flex justify-end gap-2 pt-2">
           <button type="button" className="btn-secondary" onClick={() => navigate('/dashboard')}>

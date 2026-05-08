@@ -36,15 +36,24 @@ export default function FarmerDashboard() {
   return (
     <div className="space-y-10">
       <header className="flex flex-col items-start justify-between gap-5 sm:flex-row sm:items-end animate-slide-up">
-        <div>
-          <p className="eyebrow">Your atelier</p>
-          <h1 className="mt-2 font-display text-4xl text-koko-ink sm:text-5xl">
-            Talofa, <span className="italic text-koko-teal">{firstName}</span>
-          </h1>
-          <p className="mt-2 max-w-lg text-sm text-koko-body">
-            Manage your farm profile and record verified cacao batches. Each batch becomes a
-            scannable provenance pass.
-          </p>
+        <div className="flex items-start gap-4">
+          {profile?.avatarUrl ? (
+            <img
+              src={profile.avatarUrl}
+              alt={profile.fullName || ''}
+              className="h-14 w-14 shrink-0 rounded-full border-2 border-white object-cover shadow-sm sm:h-16 sm:w-16"
+            />
+          ) : null}
+          <div>
+            <p className="eyebrow">Your atelier</p>
+            <h1 className="mt-2 font-display text-4xl text-koko-ink sm:text-5xl">
+              Talofa, <span className="italic text-koko-teal">{firstName}</span>
+            </h1>
+            <p className="mt-2 max-w-lg text-sm text-koko-body">
+              Manage your farm profile and record verified cacao batches. Each batch becomes a
+              scannable provenance pass.
+            </p>
+          </div>
         </div>
         <div className="flex gap-2">
           <Link to="/farm" className="btn-secondary">

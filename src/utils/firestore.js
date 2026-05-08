@@ -52,6 +52,20 @@ export const createBatch = async (data) => {
   return ref.id;
 };
 
+// Pre-generate a Firestore-style ID so we can upload photos under a known
+// batches/{ownerUid}/{batchId}/ path before the batch doc itself exists.
+export const newBatchId = () => doc(collection(db, COLLECTIONS.batches)).id;
+
+export const setBatch = (id, data) =>
+  setDoc(doc(db, COLLECTIONS.batches, id), {
+    ...data,
+    status: data.status || 'available',
+    createdAt: serverTimestamp()
+  });
+
+export const updateUser = (uid, data) =>
+  setDoc(doc(db, COLLECTIONS.users, uid), data, { merge: true });
+
 export const updateBatch = (id, data) =>
   updateDoc(doc(db, COLLECTIONS.batches, id), data);
 

@@ -50,7 +50,13 @@ export function AuthProvider({ children }) {
   const login = (email, password) => signInWithEmailAndPassword(auth, email, password);
   const logout = () => signOut(auth);
 
-  const value = { user, profile, loading, register, login, logout };
+  const updateProfile = async (updates) => {
+    if (!user) return;
+    await setDoc(doc(db, COLLECTIONS.users, user.uid), updates, { merge: true });
+    setProfile((p) => ({ ...(p || {}), ...updates }));
+  };
+
+  const value = { user, profile, loading, register, login, logout, updateProfile };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

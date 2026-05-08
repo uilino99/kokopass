@@ -39,6 +39,7 @@ In the Firebase Console:
 
 - **Authentication → Sign-in method**: enable **Email/Password**.
 - **Firestore Database**: create a database (start in production mode).
+- **Storage**: enable (used for farmer avatars, farm hero photos, and batch photos).
 - **Hosting**: enable.
 
 ## 2. Run locally
@@ -62,9 +63,10 @@ Live URL: `https://kokopass-fdb47.web.app`.
 Piecewise:
 
 ```powershell
-npm run deploy           # build + hosting
-npm run deploy:rules     # security rules
+npm run deploy                          # build + hosting
+npm run deploy:rules                    # firestore rules
 firebase deploy --only firestore:indexes
+firebase deploy --only storage          # storage rules
 ```
 
 ## 4. Firestore data model
@@ -92,6 +94,19 @@ Security rules in `firestore.rules`:
 - `exports` and `buyer_portfolios` are role-gated.
 - `weather_alerts` and `ai_predictions` are server-written via Cloud Functions.
 - `audit_logs` are append-only and never client-readable.
+
+Storage layout (`storage.rules`):
+
+```
+users/{uid}/avatar.jpg                      farmer face — owner write, public read
+farms/{uid}/hero.jpg                        farm hero photo — owner write, public read
+batches/{ownerUid}/{batchId}/photo-{n}.jpg  batch photos — owner write, public read
+```
+
+All writes require auth, the owner UID embedded in the path, an `image/*`
+content type, and a max size of 5 MB. Reads are public so the `/verify/:id`
+page renders for any buyer without a sign-in. Photos are compressed
+client-side to 1600 px on the long edge at JPEG quality 0.82 before upload.
 
 ## 5. PWA
 

@@ -95,6 +95,28 @@ export default function BatchView() {
         </div>
       </article>
 
+      {batch.photoUrls?.length > 0 && (
+        <section className="animate-slide-up">
+          <p className="eyebrow">Photos on this pass</p>
+          <div
+            className="mt-3 grid gap-3"
+            style={{
+              gridTemplateColumns: `repeat(${Math.min(batch.photoUrls.length, 3)}, minmax(0, 1fr))`
+            }}
+          >
+            {batch.photoUrls.map((url) => (
+              <img
+                key={url}
+                src={url}
+                alt="Batch"
+                className="aspect-square w-full rounded-2xl border border-koko-border object-cover shadow-sm"
+                loading="lazy"
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
       <div className="flex flex-wrap gap-3 no-print">
         <button onClick={downloadPng} className="btn-accent">⬇ Download PNG</button>
         <button onClick={() => window.print()} className="btn-secondary">🖨 Print label</button>

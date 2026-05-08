@@ -10,7 +10,6 @@ export default function Verify() {
   const [shipmentBatches, setShipmentBatches] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Resolve the QR target — try batches first, then exports.
   useEffect(() => {
     let active = true;
     let unsubBatch = null;
@@ -19,7 +18,6 @@ export default function Verify() {
       const batch = await getBatch(id);
       if (!active) return;
       if (batch) {
-        // Subscribe live to keep verify page real-time.
         unsubBatch = subscribeBatch(id, (b) => {
           if (!active) return;
           setData(b);
@@ -75,30 +73,78 @@ export default function Verify() {
   return <BatchView batch={data} />;
 }
 
-function BatchView({ batch }) {
-  return (
-    <div className="mx-auto max-w-2xl space-y-8 page">
-      <div className="card-elevated text-center animate-slide-up">
-        <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-koko-teal100 text-koko-teal animate-bounce-sm">
-          <span className="text-2xl">✓</span>
-        </div>
-        <p className="eyebrow mt-3">Verified provenance</p>
-        <h1 className="mt-2 font-display text-4xl text-koko-ink sm:text-5xl">
-          Authentic <span className="italic text-koko-teal">KokoPass</span>
-        </h1>
-        <div className="divider-teal mt-5" />
-        <p className="mt-5 text-sm text-koko-body sm:text-base">
-          This bag is traceable to its source farm in Samoa.
-        </p>
-      </div>
+/* ---------- Batch verify ---------- */
 
-      <article className="card-elevated animate-slide-up">
-        <p className="eyebrow">Origin</p>
-        <h2 className="mt-2 font-display text-3xl text-koko-ink">
-          {batch.farmName}
-          <span className="block text-base font-sans font-medium text-koko-muted">
-            {batch.village}, Samoa
+function BatchView({ batch }) {
+  const initials = (batch.farmerName || batch.farmName || '?')
+    .split(/\s+/)
+    .map((s) => s[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
+
+  return (
+    <div className="mx-auto max-w-3xl space-y-8 page">
+      {/* Hero */}
+      <header className="relative overflow-hidden rounded-3xl border border-koko-border bg-white shadow-md animate-slide-up">
+        <div className="relative">
+          {batch.farmHeroUrl ? (
+            <img
+              src={batch.farmHeroUrl}
+              alt={`${batch.farmName} farm`}
+              className="aspect-[16/9] w-full object-cover"
+              loading="lazy"
+            />
+          ) : (
+            <div className="aspect-[16/9] w-full bg-navy-grad" />
+          )}
+          <span className="absolute right-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 text-xs font-semibold uppercase tracking-widest text-koko-teal shadow-sm backdrop-blur">
+            <span className="grid h-4 w-4 place-items-center rounded-full bg-koko-teal text-[10px] text-white">✓</span>
+            Verified
           </span>
+        </div>
+
+        <div className="px-6 pb-7 sm:px-10 sm:pb-10">
+          {/* Farmer chip floats over hero edge */}
+          <div className="-mt-9 flex flex-wrap items-end gap-4 sm:-mt-12">
+            <div className="grid h-20 w-20 shrink-0 place-items-center overflow-hidden rounded-full border-4 border-white bg-koko-teal100 text-koko-teal shadow-md sm:h-24 sm:w-24">
+              {batch.farmerAvatarUrl ? (
+                <img
+                  src={batch.farmerAvatarUrl}
+                  alt={batch.farmerName || 'Farmer'}
+                  className="h-full w-full object-cover"
+                  loading="lazy"
+                />
+              ) : (
+                <span className="font-display text-2xl">{initials}</span>
+              )}
+            </div>
+            <div className="min-w-0 flex-1 pt-2 sm:pt-6">
+              <p className="eyebrow">Grown by</p>
+              <h1 className="mt-1 font-display text-3xl text-koko-ink sm:text-4xl">
+                {batch.farmerName || batch.farmName}
+              </h1>
+              <p className="text-sm text-koko-body">
+                {batch.farmName} · {batch.village || 'Samoa'}
+                {batch.district ? `, ${batch.district}` : ''}
+              </p>
+            </div>
+          </div>
+
+          {batch.farmStory && (
+            <blockquote className="mt-6 border-l-2 border-koko-teal pl-4 font-display text-lg italic text-koko-ink sm:text-xl">
+              “{batch.farmStory}”
+            </blockquote>
+          )}
+        </div>
+      </header>
+
+      {/* Specs */}
+      <article className="card-elevated animate-slide-up">
+        <p className="eyebrow">This batch</p>
+        <h2 className="mt-1 font-display text-2xl text-koko-ink">
+          {batch.weightKg} kg · {batch.processing}
         </h2>
         <div className="divider" />
         <dl className="grid grid-cols-2 gap-y-5 sm:grid-cols-3">
@@ -115,14 +161,41 @@ function BatchView({ batch }) {
             />
           )}
         </dl>
-        <div className="mt-6 text-xs text-koko-muted">
-          <span className="text-koko-faint">Batch ID</span>
-          <div className="mt-1 break-all font-mono text-koko-ink">{batch.id}</div>
-        </div>
       </article>
+
+      {/* Photos */}
+      {batch.photoUrls?.length > 0 && (
+        <section className="animate-slide-up">
+          <p className="eyebrow">From the harvest</p>
+          <div
+            className="mt-3 grid gap-3"
+            style={{
+              gridTemplateColumns: `repeat(${Math.min(batch.photoUrls.length, 3)}, minmax(0, 1fr))`
+            }}
+          >
+            {batch.photoUrls.map((url) => (
+              <a key={url} href={url} target="_blank" rel="noreferrer">
+                <img
+                  src={url}
+                  alt="Batch"
+                  className="aspect-square w-full rounded-2xl border border-koko-border object-cover shadow-sm transition hover:shadow-md"
+                  loading="lazy"
+                />
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <p className="text-center text-xs text-koko-muted">
+        <span className="text-koko-faint">Batch ID</span>{' '}
+        <span className="font-mono text-koko-ink break-all">{batch.id}</span>
+      </p>
     </div>
   );
 }
+
+/* ---------- Shipment verify ---------- */
 
 function ShipmentView({ shipment, batches }) {
   return (
@@ -168,8 +241,17 @@ function ShipmentView({ shipment, batches }) {
         ) : (
           <ul className="mt-4 divide-y divide-koko-border">
             {batches.map((b) => (
-              <li key={b.id} className="flex items-start justify-between gap-3 py-3">
-                <div className="min-w-0">
+              <li key={b.id} className="flex items-start gap-3 py-3">
+                <div className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full bg-koko-teal100 text-koko-teal">
+                  {b.farmerAvatarUrl ? (
+                    <img src={b.farmerAvatarUrl} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    <span className="text-sm font-semibold">
+                      {(b.farmerName || b.farmName || '?').slice(0, 1).toUpperCase()}
+                    </span>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <p className="truncate font-medium text-koko-ink">{b.farmName}</p>
                     <span className="badge-teal">Grade {b.quality}</span>
