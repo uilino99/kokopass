@@ -1,4 +1,78 @@
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { fetchAggregateCounts } from '../utils/firestore.js';
+
+function useCountUp(target, durationMs = 900) {
+  const [value, setValue] = useState(0);
+  const fromRef = useRef(0);
+  useEffect(() => {
+    if (target == null) return;
+    const from = fromRef.current;
+    const to = target;
+    const start = performance.now();
+    let raf;
+    const tick = (t) => {
+      const p = Math.min(1, (t - start) / durationMs);
+      // ease-out-cubic
+      const eased = 1 - Math.pow(1 - p, 3);
+      setValue(Math.round(from + (to - from) * eased));
+      if (p < 1) raf = requestAnimationFrame(tick);
+      else fromRef.current = to;
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target, durationMs]);
+  return value;
+}
+
+function LiveStats() {
+  const [counts, setCounts] = useState(null);
+
+  useEffect(() => {
+    let active = true;
+    fetchAggregateCounts()
+      .then((c) => {
+        if (active) setCounts(c);
+      })
+      .catch(() => {
+        if (active) setCounts({ farms: 0, batches: 0, shipments: 0 });
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const farms = useCountUp(counts?.farms ?? null);
+  const batches = useCountUp(counts?.batches ?? null);
+  const shipments = useCountUp(counts?.shipments ?? null);
+  const ready = counts != null;
+
+  const items = [
+    { value: farms, label: 'Farms participating' },
+    { value: batches, label: 'Batches verified' },
+    { value: shipments, label: 'Shipments traced' }
+  ];
+
+  return (
+    <dl className="mt-12 grid grid-cols-3 gap-3 sm:gap-6 max-w-2xl mx-auto">
+      {items.map((it) => (
+        <div key={it.label} className="text-center">
+          <dt className="text-[10px] sm:text-xs font-semibold uppercase tracking-widest text-koko-muted">
+            {it.label}
+          </dt>
+          <dd
+            className={`mt-1 font-display text-3xl sm:text-5xl font-semibold text-koko-ink transition-opacity ${
+              ready ? 'opacity-100' : 'opacity-40'
+            }`}
+            aria-live="polite"
+          >
+            {ready ? it.value.toLocaleString() : '—'}
+          </dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
 
 export default function Landing() {
   return (
@@ -24,6 +98,7 @@ export default function Landing() {
           <Link to="/register" className="btn-accent">Start tracing</Link>
           <Link to="/login" className="btn-secondary">Sign in</Link>
         </div>
+        <LiveStats />
       </section>
 
       {/* Pillars */}

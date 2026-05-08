@@ -7,20 +7,23 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['icon.svg', 'icon-192.png', 'icon-512.png'],
+      includeAssets: ['icon.svg'],
       manifest: {
         name: 'KokoPass',
         short_name: 'KokoPass',
-        description: 'Verified cacao traceability for Samoa.',
-        theme_color: '#0b1d3a',
-        background_color: '#0b1d3a',
+        description: 'Verified single-origin Samoan cacao, traceable from farm to bar.',
+        theme_color: '#003366',
+        background_color: '#F5F7F2',
         display: 'standalone',
         orientation: 'portrait',
         start_url: '/',
         icons: [
-          { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
-          { src: '/icon-512.png', sizes: '512x512', type: 'image/png' },
-          { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' }
+          {
+            src: '/icon.svg',
+            sizes: '192x192 512x512',
+            type: 'image/svg+xml',
+            purpose: 'any maskable'
+          }
         ]
       },
       workbox: {

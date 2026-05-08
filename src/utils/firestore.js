@@ -2,6 +2,7 @@ import {
   addDoc,
   collection,
   doc,
+  getCountFromServer,
   getDoc,
   getDocs,
   limit,
@@ -104,6 +105,34 @@ export const writeAuditLog = (entry) =>
     ...entry,
     at: serverTimestamp()
   });
+
+// ---------- Aggregate counters (Landing) ----------
+
+let _aggregateCache = null;
+let _aggregateInflight = null;
+
+export function fetchAggregateCounts({ force = false } = {}) {
+  if (!force && _aggregateCache) return Promise.resolve(_aggregateCache);
+  if (_aggregateInflight) return _aggregateInflight;
+  _aggregateInflight = (async () => {
+    try {
+      const [farms, batches, shipments] = await Promise.all([
+        getCountFromServer(collection(db, COLLECTIONS.farms)),
+        getCountFromServer(collection(db, COLLECTIONS.batches)),
+        getCountFromServer(collection(db, COLLECTIONS.exports))
+      ]);
+      _aggregateCache = {
+        farms: farms.data().count,
+        batches: batches.data().count,
+        shipments: shipments.data().count
+      };
+      return _aggregateCache;
+    } finally {
+      _aggregateInflight = null;
+    }
+  })();
+  return _aggregateInflight;
+}
 
 // ---------- Single-batch reads (for exporter scanning) ----------
 

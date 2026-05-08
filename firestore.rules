@@ -25,7 +25,11 @@ service cloud.firestore {
 
     // Farm docs are keyed by farmer UID.
     match /farms/{farmId} {
-      allow read: if isSignedIn();   // exporters/buyers can look up farm metadata
+      // Public read — farm metadata is already snapshot onto batches and
+      // surfaced on the public /verify page; exposing the canonical doc
+      // doesn't reveal anything new and lets the marketing page show
+      // aggregate counts without requiring auth.
+      allow read: if true;
       allow create, update: if isOwner(farmId)
         && request.resource.data.ownerUid == request.auth.uid;
       allow delete: if false;
