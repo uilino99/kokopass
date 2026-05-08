@@ -21,13 +21,15 @@ export default function Register() {
     email: '',
     phone: '',
     password: '',
-    role: 'farmer'
+    role: 'farmer',
+    claimCode: ''
   });
   const [errors, setErrors] = useState({});
   const [busy, setBusy] = useState(false);
 
   const set = (k) => (e) => {
-    setForm((f) => ({ ...f, [k]: e.target.value }));
+    const val = k === 'claimCode' ? e.target.value.toUpperCase() : e.target.value;
+    setForm((f) => ({ ...f, [k]: val }));
     if (errors[k]) setErrors((s) => ({ ...s, [k]: undefined }));
   };
 
@@ -38,9 +40,27 @@ export default function Register() {
     if (hasErrors(v)) return;
     setBusy(true);
     try {
-      await register(form);
-      toast.success('Account created. Welcome to KokoPass!');
-      navigate(form.role === 'farmer' ? '/farm' : '/dashboard');
+      const { claimedEnrollmentId } = await register(form);
+
+      if (form.role === 'farmer' && form.claimCode?.trim()) {
+        if (claimedEnrollmentId) {
+          toast.success('Welcome back. Your farm record was claimed.');
+        } else {
+          toast.error("We couldn't find an unclaimed record for that code.");
+        }
+      } else {
+        toast.success('Account created. Welcome to KokoPass!');
+      }
+
+      // Farmers who claimed go straight to the dashboard since their farm
+      // is already pre-populated. Otherwise farmers go to /farm to set up.
+      const dest =
+        form.role === 'farmer'
+          ? claimedEnrollmentId
+            ? '/dashboard'
+            : '/farm'
+          : '/dashboard';
+      navigate(dest);
     } catch (err) {
       toast.error(err.message || 'Registration failed.');
     } finally {
@@ -124,6 +144,26 @@ export default function Register() {
               ))}
             </div>
           </fieldset>
+
+          {form.role === 'farmer' && (
+            <Field
+              label="Claim code"
+              id="r-code"
+              hint="Were you pre-enrolled by a village rep? Enter your 6-character code to claim your farm record."
+            >
+              <input
+                id="r-code"
+                inputMode="text"
+                maxLength={6}
+                placeholder="XXXXXX"
+                autoComplete="off"
+                className="input font-mono uppercase tracking-widest"
+                value={form.claimCode}
+                onChange={set('claimCode')}
+              />
+            </Field>
+          )}
+
           <button className="btn-accent w-full" disabled={busy}>
             {busy && <Spinner size="sm" />} {busy ? 'Creating account…' : 'Create account'}
           </button>

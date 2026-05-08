@@ -4,13 +4,15 @@ import {
   doc,
   getDoc,
   getDocs,
+  limit,
   onSnapshot,
   orderBy,
   query,
   serverTimestamp,
   setDoc,
   updateDoc,
-  where
+  where,
+  writeBatch
 } from 'firebase/firestore';
 import { db } from '../firebase.js';
 
@@ -244,4 +246,72 @@ export const subscribeEnrollmentsByEnroller = (enrollerUid, cb) => {
   return onSnapshot(q, (snap) =>
     cb(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
   );
+};
+
+const normalizeClaimCode = (code) =>
+  String(code || '').trim().toUpperCase().replace(/\s+/g, '');
+
+export const findEnrollmentByCode = async (code) => {
+  const c = normalizeClaimCode(code);
+  if (c.length !== 6) return null;
+  const q = query(
+    collection(db, COLLECTIONS.enrollments),
+    where('claimCode', '==', c),
+    where('claimed', '==', false),
+    limit(1)
+  );
+  const snap = await getDocs(q);
+  if (snap.empty) return null;
+  const d = snap.docs[0];
+  return { id: d.id, ...d.data() };
+};
+
+/**
+ * Atomically claims an unclaimed enrollment for the signed-in user:
+ *   1. seed `farms/{uid}` with the enrollment fields
+ *   2. merge the enroller link + phone into `users/{uid}`
+ *   3. flip the enrollment to claimed by this uid
+ *
+ * Returns the claimed enrollment ID, or null if no record was found.
+ */
+export const claimEnrollment = async (uid, code, override = {}) => {
+  const e = await findEnrollmentByCode(code);
+  if (!e) return null;
+
+  const batch = writeBatch(db);
+
+  batch.set(
+    doc(db, COLLECTIONS.farms, uid),
+    {
+      ownerUid: uid,
+      farmName: override.farmName || e.fullName || '',
+      village: e.village || '',
+      district: e.district || '',
+      crop: e.crop || 'Cacao',
+      variety: e.variety || '',
+      sizeHectares: Number(e.sizeHectares) || 0,
+      story: e.story || '',
+      location: e.location || null,
+      updatedAt: serverTimestamp()
+    },
+    { merge: true }
+  );
+
+  batch.set(
+    doc(db, COLLECTIONS.users, uid),
+    {
+      phone: override.phone || e.phone || '',
+      enrolledByUid: e.enrollerUid || null,
+      claimedEnrollmentId: e.id
+    },
+    { merge: true }
+  );
+
+  batch.update(doc(db, COLLECTIONS.enrollments, e.id), {
+    claimed: true,
+    claimedUid: uid
+  });
+
+  await batch.commit();
+  return e.id;
 };

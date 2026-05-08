@@ -4,11 +4,11 @@ import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
   signOut,
-  updateProfile
+  updateProfile as fbUpdateProfile
 } from 'firebase/auth';
 import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase.js';
-import { COLLECTIONS } from '../utils/firestore.js';
+import { COLLECTIONS, claimEnrollment } from '../utils/firestore.js';
 
 export const AuthContext = createContext(null);
 
@@ -31,9 +31,17 @@ export function AuthProvider({ children }) {
     return unsub;
   }, []);
 
-  const register = async ({ email, password, fullName, phone, role = 'farmer' }) => {
+  const register = async ({
+    email,
+    password,
+    fullName,
+    phone,
+    role = 'farmer',
+    claimCode = ''
+  }) => {
     const cred = await createUserWithEmailAndPassword(auth, email, password);
-    await updateProfile(cred.user, { displayName: fullName });
+    await fbUpdateProfile(cred.user, { displayName: fullName });
+
     const userDoc = {
       uid: cred.user.uid,
       email,
@@ -43,20 +51,45 @@ export function AuthProvider({ children }) {
       createdAt: serverTimestamp()
     };
     await setDoc(doc(db, COLLECTIONS.users, cred.user.uid), userDoc);
-    setProfile(userDoc);
-    return cred.user;
+
+    let claimedEnrollmentId = null;
+    if (role === 'farmer' && claimCode?.trim()) {
+      try {
+        claimedEnrollmentId = await claimEnrollment(cred.user.uid, claimCode, {
+          farmName: '',
+          phone: phone || ''
+        });
+      } catch {
+        // Best-effort — registration succeeds even if claim fails.
+        claimedEnrollmentId = null;
+      }
+    }
+
+    const finalProfile = claimedEnrollmentId
+      ? { ...userDoc, claimedEnrollmentId }
+      : userDoc;
+    setProfile(finalProfile);
+    return { user: cred.user, claimedEnrollmentId };
   };
 
   const login = (email, password) => signInWithEmailAndPassword(auth, email, password);
   const logout = () => signOut(auth);
 
-  const updateProfile = async (updates) => {
+  const updateUserProfile = async (updates) => {
     if (!user) return;
     await setDoc(doc(db, COLLECTIONS.users, user.uid), updates, { merge: true });
     setProfile((p) => ({ ...(p || {}), ...updates }));
   };
 
-  const value = { user, profile, loading, register, login, logout, updateProfile };
+  const value = {
+    user,
+    profile,
+    loading,
+    register,
+    login,
+    logout,
+    updateProfile: updateUserProfile
+  };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
