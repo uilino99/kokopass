@@ -95,5 +95,18 @@ service cloud.firestore {
         && request.resource.data.actorUid == request.auth.uid;
       allow update, delete: if false;
     }
+
+    // Scans: a buyer's traceability portfolio. Deterministic doc IDs of
+    // the form "{ownerUid}_{refId}" make re-scanning the same QR an
+    // idempotent merge that just refreshes scannedAt.
+    match /scans/{scanId} {
+      allow read: if isSignedIn() && resource.data.ownerUid == request.auth.uid;
+      allow create: if isSignedIn()
+        && request.resource.data.ownerUid == request.auth.uid;
+      allow update: if isSignedIn()
+        && resource.data.ownerUid == request.auth.uid
+        && request.resource.data.ownerUid == request.auth.uid;
+      allow delete: if isSignedIn() && resource.data.ownerUid == request.auth.uid;
+    }
   }
 }

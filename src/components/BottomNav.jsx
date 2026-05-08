@@ -67,18 +67,28 @@ const ICONS = {
 
 export default function BottomNav({ user, profile, onLogout }) {
   if (!user) return null;
-  const isExporter = profile?.role === 'exporter';
+  const role = profile?.role;
+  const isExporter = role === 'exporter';
+  const isBuyer = role === 'buyer';
 
-  const left = [
-    { to: '/dashboard', label: 'Home', icon: ICONS.home, end: true },
-    isExporter
-      ? { to: '/exporter', label: 'Shipments', icon: ICONS.box }
-      : { to: '/farm', label: 'Farm', icon: ICONS.leaf }
-  ];
+  // Tab to the LEFT of the FAB — varies by role.
+  const leftTab = isExporter
+    ? { to: '/exporter', label: 'Shipments', icon: ICONS.box }
+    : isBuyer
+      ? { to: '/buyer', label: 'Portfolio', icon: ICONS.qr }
+      : { to: '/farm', label: 'Farm', icon: ICONS.leaf };
 
+  // The FAB destination.
   const fab = isExporter
     ? { to: '/exporter/shipments/new', label: 'New shipment' }
-    : { to: '/batches/new', label: 'New batch' };
+    : isBuyer
+      ? { to: '/buyer/scan', label: 'Scan a pass' }
+      : { to: '/batches/new', label: 'New batch' };
+
+  // Tab to the RIGHT of the FAB — exporter gets Scan; otherwise spacer.
+  const rightTab = isExporter
+    ? { to: '/exporter/shipments/new', label: 'Scan', icon: ICONS.qr }
+    : null;
 
   return (
     <nav
@@ -87,9 +97,8 @@ export default function BottomNav({ user, profile, onLogout }) {
       aria-label="Primary"
     >
       <div className="relative mx-auto grid h-16 max-w-md grid-cols-5 items-center px-2 text-xs">
-        {left.map((t) => (
-          <Tab key={t.to} {...t} />
-        ))}
+        <Tab to="/dashboard" label="Home" icon={ICONS.home} end />
+        <Tab {...leftTab} />
 
         {/* Center FAB */}
         <div className="flex justify-center">
@@ -102,12 +111,7 @@ export default function BottomNav({ user, profile, onLogout }) {
           </Link>
         </div>
 
-        {/* QR scan shortcut for exporters, otherwise spacer */}
-        {isExporter ? (
-          <Tab to="/exporter/shipments/new" label="Scan" icon={ICONS.qr} />
-        ) : (
-          <span aria-hidden />
-        )}
+        {rightTab ? <Tab {...rightTab} /> : <span aria-hidden />}
 
         <button
           type="button"

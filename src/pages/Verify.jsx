@@ -1,14 +1,23 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { getBatch, getExport, subscribeBatch } from '../utils/firestore.js';
+import {
+  getBatch,
+  getExport,
+  recordScan,
+  subscribeBatch
+} from '../utils/firestore.js';
+import { useAuth } from '../hooks/useAuth.js';
 import { FullPageSpinner } from '../components/Spinner.jsx';
 
 export default function Verify() {
   const { id } = useParams();
+  const { user, profile } = useAuth();
   const [kind, setKind] = useState(null); // 'batch' | 'shipment' | 'missing'
   const [data, setData] = useState(null);
   const [shipmentBatches, setShipmentBatches] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [saved, setSaved] = useState(false);
+  const recordedRef = useRef(null);
 
   useEffect(() => {
     let active = true;
@@ -49,6 +58,35 @@ export default function Verify() {
     };
   }, [id]);
 
+  // Auto-record scan when a signed-in buyer lands on the page.
+  useEffect(() => {
+    if (!user || profile?.role !== 'buyer') return;
+    if (!data || !kind || kind === 'missing') return;
+    if (recordedRef.current === data.id) return;
+    recordedRef.current = data.id;
+
+    const summary =
+      kind === 'shipment'
+        ? {
+            destination: data.destination || '',
+            buyerName: data.buyerName || '',
+            totalKg: data.totalKg ?? null,
+            batchesCount: data.batchIds?.length ?? 0,
+            farmsCount: data.farmsCount ?? null
+          }
+        : {
+            farmName: data.farmName || '',
+            village: data.village || '',
+            weightKg: data.weightKg ?? null,
+            quality: data.quality || '',
+            harvestDate: data.harvestDate || ''
+          };
+
+    recordScan(user.uid, { refId: data.id, refKind: kind, summary })
+      .then(() => setSaved(true))
+      .catch(() => {});
+  }, [user, profile, data, kind]);
+
   if (loading) return <FullPageSpinner label="Verifying" />;
 
   if (kind === 'missing') {
@@ -69,13 +107,26 @@ export default function Verify() {
     );
   }
 
-  if (kind === 'shipment') return <ShipmentView shipment={data} batches={shipmentBatches} />;
-  return <BatchView batch={data} />;
+  if (kind === 'shipment')
+    return <ShipmentView shipment={data} batches={shipmentBatches} saved={saved} />;
+  return <BatchView batch={data} saved={saved} />;
+}
+
+function SavedPill({ saved }) {
+  if (!saved) return null;
+  return (
+    <div className="mb-4 flex animate-slide-up items-center justify-center gap-2 rounded-full border border-koko-success/40 bg-koko-successBg px-3 py-2 text-xs font-semibold text-koko-success">
+      <span className="grid h-4 w-4 place-items-center rounded-full bg-koko-success text-[10px] text-white">
+        ✓
+      </span>
+      Saved to your portfolio
+    </div>
+  );
 }
 
 /* ---------- Batch verify ---------- */
 
-function BatchView({ batch }) {
+function BatchView({ batch, saved }) {
   const initials = (batch.farmerName || batch.farmName || '?')
     .split(/\s+/)
     .map((s) => s[0])
@@ -86,6 +137,7 @@ function BatchView({ batch }) {
 
   return (
     <div className="mx-auto max-w-3xl space-y-8 page">
+      <SavedPill saved={saved} />
       {/* Hero */}
       <header className="relative overflow-hidden rounded-3xl border border-koko-border bg-white shadow-md animate-slide-up">
         <div className="relative">
@@ -197,9 +249,10 @@ function BatchView({ batch }) {
 
 /* ---------- Shipment verify ---------- */
 
-function ShipmentView({ shipment, batches }) {
+function ShipmentView({ shipment, batches, saved }) {
   return (
     <div className="mx-auto max-w-2xl space-y-8 page">
+      <SavedPill saved={saved} />
       <div className="card-elevated text-center animate-slide-up">
         <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-koko-teal100 text-koko-teal animate-bounce-sm">
           <span className="text-2xl">✓</span>

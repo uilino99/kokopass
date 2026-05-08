@@ -45,7 +45,7 @@ export default function Layout({ children }) {
             // Top nav is desktop-only when signed in — bottom nav owns mobile.
             <nav className="hidden items-center gap-1 md:flex md:gap-2">
               <NavLink to="/dashboard" className={linkClass}>Dashboard</NavLink>
-              {profile?.role === 'exporter' ? (
+              {profile?.role === 'exporter' && (
                 <>
                   <NavLink to="/exporter" className={linkClass}>Shipments</NavLink>
                   <Link
@@ -55,7 +55,19 @@ export default function Layout({ children }) {
                     + Shipment
                   </Link>
                 </>
-              ) : (
+              )}
+              {profile?.role === 'buyer' && (
+                <>
+                  <NavLink to="/buyer" className={linkClass}>Portfolio</NavLink>
+                  <Link
+                    to="/buyer/scan"
+                    className="btn-accent !min-h-[40px] !px-4 !py-2"
+                  >
+                    + Scan
+                  </Link>
+                </>
+              )}
+              {profile?.role !== 'exporter' && profile?.role !== 'buyer' && (
                 <>
                   <NavLink to="/farm" className={linkClass}>Farm</NavLink>
                   <Link

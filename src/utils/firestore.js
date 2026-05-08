@@ -19,6 +19,7 @@ export const COLLECTIONS = {
   farms: 'farms',
   batches: 'batches',
   exports: 'exports',
+  scans: 'scans',
   transactions: 'transactions',
   weatherAlerts: 'weather_alerts',
   buyerPortfolios: 'buyer_portfolios',
@@ -156,4 +157,37 @@ export const parseBatchIdFromQr = (text) => {
   if (m) return m[1];
   if (/^[A-Za-z0-9_-]{16,}$/.test(t)) return t;
   return null;
+};
+
+// ---------- Buyer scans ----------
+
+/**
+ * Idempotent: doc ID is `${ownerUid}_${refId}` so re-scanning the same
+ * QR refreshes scannedAt instead of creating a new entry.
+ */
+export const recordScan = (ownerUid, { refId, refKind, summary }) => {
+  if (!ownerUid || !refId) return Promise.resolve();
+  const id = `${ownerUid}_${refId}`;
+  return setDoc(
+    doc(db, COLLECTIONS.scans, id),
+    {
+      ownerUid,
+      refId,
+      refKind, // 'batch' | 'shipment'
+      summary: summary || null,
+      scannedAt: serverTimestamp()
+    },
+    { merge: true }
+  );
+};
+
+export const subscribeScansByOwner = (ownerUid, cb) => {
+  const q = query(
+    collection(db, COLLECTIONS.scans),
+    where('ownerUid', '==', ownerUid),
+    orderBy('scannedAt', 'desc')
+  );
+  return onSnapshot(q, (snap) =>
+    cb(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+  );
 };

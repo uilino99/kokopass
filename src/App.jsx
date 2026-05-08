@@ -11,6 +11,8 @@ import BatchView from './pages/BatchView.jsx';
 import ExporterDashboard from './pages/ExporterDashboard.jsx';
 import ShipmentNew from './pages/ShipmentNew.jsx';
 import ShipmentView from './pages/ShipmentView.jsx';
+import BuyerDashboard from './pages/BuyerDashboard.jsx';
+import BuyerScan from './pages/BuyerScan.jsx';
 import Verify from './pages/Verify.jsx';
 
 export default function App() {
@@ -79,6 +81,24 @@ export default function App() {
           element={
             <ProtectedRoute role="exporter">
               <ShipmentView />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Buyer routes */}
+        <Route
+          path="/buyer"
+          element={
+            <ProtectedRoute role="buyer">
+              <BuyerDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/buyer/scan"
+          element={
+            <ProtectedRoute role="buyer">
+              <BuyerScan />
             </ProtectedRoute>
           }
         />
