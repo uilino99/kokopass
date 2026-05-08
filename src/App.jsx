@@ -8,6 +8,9 @@ import Dashboard from './pages/Dashboard.jsx';
 import FarmProfile from './pages/FarmProfile.jsx';
 import BatchNew from './pages/BatchNew.jsx';
 import BatchView from './pages/BatchView.jsx';
+import ExporterDashboard from './pages/ExporterDashboard.jsx';
+import ShipmentNew from './pages/ShipmentNew.jsx';
+import ShipmentView from './pages/ShipmentView.jsx';
 import Verify from './pages/Verify.jsx';
 
 export default function App() {
@@ -18,6 +21,7 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/verify/:id" element={<Verify />} />
+
         <Route
           path="/dashboard"
           element={
@@ -26,6 +30,8 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+
+        {/* Farmer routes */}
         <Route
           path="/farm"
           element={
@@ -50,6 +56,33 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+
+        {/* Exporter routes */}
+        <Route
+          path="/exporter"
+          element={
+            <ProtectedRoute role="exporter">
+              <ExporterDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/exporter/shipments/new"
+          element={
+            <ProtectedRoute role="exporter">
+              <ShipmentNew />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/exporter/shipments/:id"
+          element={
+            <ProtectedRoute role="exporter">
+              <ShipmentView />
+            </ProtectedRoute>
+          }
+        />
+
         <Route
           path="*"
           element={

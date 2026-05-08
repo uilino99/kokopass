@@ -86,3 +86,60 @@ export const writeAuditLog = (entry) =>
     ...entry,
     at: serverTimestamp()
   });
+
+// ---------- Single-batch reads (for exporter scanning) ----------
+
+export const getBatch = async (id) => {
+  const snap = await getDoc(doc(db, COLLECTIONS.batches, id));
+  return snap.exists() ? { id: snap.id, ...snap.data() } : null;
+};
+
+// ---------- Exports / shipments ----------
+
+export const createExport = async (data) => {
+  const ref = await addDoc(collection(db, COLLECTIONS.exports), {
+    ...data,
+    status: data.status || 'shipped',
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp()
+  });
+  return ref.id;
+};
+
+export const getExport = async (id) => {
+  const snap = await getDoc(doc(db, COLLECTIONS.exports, id));
+  return snap.exists() ? { id: snap.id, ...snap.data() } : null;
+};
+
+export const subscribeExport = (id, cb) =>
+  onSnapshot(doc(db, COLLECTIONS.exports, id), (snap) =>
+    cb(snap.exists() ? { id: snap.id, ...snap.data() } : null)
+  );
+
+export const subscribeExportsByOwner = (ownerUid, cb) => {
+  const q = query(
+    collection(db, COLLECTIONS.exports),
+    where('ownerUid', '==', ownerUid),
+    orderBy('createdAt', 'desc')
+  );
+  return onSnapshot(q, (snap) =>
+    cb(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+  );
+};
+
+// ---------- Helpers ----------
+
+/**
+ * Pull a batch ID out of a scanned QR string. Accepts:
+ *   - https://host/verify/<id>
+ *   - /verify/<id>
+ *   - bare <id>
+ */
+export const parseBatchIdFromQr = (text) => {
+  if (!text) return null;
+  const t = String(text).trim();
+  const m = t.match(/\/verify\/([^/?#\s]+)/);
+  if (m) return m[1];
+  if (/^[A-Za-z0-9_-]{16,}$/.test(t)) return t;
+  return null;
+};

@@ -41,10 +41,27 @@ export default function Layout({ children }) {
           {user ? (
             <nav className="flex items-center gap-1 sm:gap-2">
               <NavLink to="/dashboard" className={linkClass}>Dashboard</NavLink>
-              <NavLink to="/farm" className={linkClass}>Farm</NavLink>
-              <Link to="/batches/new" className="btn-accent !min-h-[40px] !px-4 !py-2 hidden sm:inline-flex">
-                + Batch
-              </Link>
+              {profile?.role === 'exporter' ? (
+                <>
+                  <NavLink to="/exporter" className={linkClass}>Shipments</NavLink>
+                  <Link
+                    to="/exporter/shipments/new"
+                    className="btn-accent !min-h-[40px] !px-4 !py-2 hidden sm:inline-flex"
+                  >
+                    + Shipment
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <NavLink to="/farm" className={linkClass}>Farm</NavLink>
+                  <Link
+                    to="/batches/new"
+                    className="btn-accent !min-h-[40px] !px-4 !py-2 hidden sm:inline-flex"
+                  >
+                    + Batch
+                  </Link>
+                </>
+              )}
               <button onClick={handleLogout} className="btn-ghost">
                 Sign out
               </button>
