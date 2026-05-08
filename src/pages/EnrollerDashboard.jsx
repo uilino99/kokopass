@@ -39,6 +39,7 @@ export default function EnrollerDashboard() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Link to="/enroll/print" className="btn-secondary">🖨 Print cards</Link>
           <Link to="/enroll/bulk" className="btn-secondary">↑ Bulk paste CSV</Link>
           <Link to="/enroll/new" className="btn-accent">+ New farmer</Link>
         </div>

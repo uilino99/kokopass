@@ -182,5 +182,118 @@
 
 @media print {
   body { background: #fff; }
+  body::before { display: none; }
   .no-print { display: none !important; }
+}
+
+/* ---------- Print: claim cards (8 per A4) ---------- */
+.print-sheet {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  padding: 0;
+}
+.print-card {
+  background: #fff;
+  border: 1px dashed #cbd5e0;
+  border-radius: 12px;
+  break-inside: avoid;
+  page-break-inside: avoid;
+  height: 240px;
+  overflow: hidden;
+}
+.print-card-body {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 6px;
+  height: 100%;
+  padding: 14px 16px;
+  color: #0F1B2D;
+  font-family: 'DM Sans', system-ui, sans-serif;
+}
+.print-card-head {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: start;
+}
+.print-card-brand { display: flex; align-items: center; gap: 8px; }
+.print-card-logo { width: 28px; height: 28px; border-radius: 8px; }
+.print-card-wordmark {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 18px;
+  font-weight: 600;
+  color: #0F1B2D;
+  line-height: 1;
+}
+.print-card-eyebrow {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #1D9E75;
+  margin-top: 3px;
+}
+.print-card-qr { width: 84px; height: 84px; }
+.print-card-qr canvas { width: 100% !important; height: 100% !important; display: block; }
+.print-card-name {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.1;
+  color: #0F1B2D;
+  margin-top: 2px;
+}
+.print-card-meta { font-size: 11px; color: #6B7280; }
+.print-card-foot {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: end;
+  gap: 12px;
+}
+.print-card-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #1D9E75;
+}
+.print-card-code {
+  font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #003366;
+  line-height: 1.05;
+}
+.print-card-instructions {
+  font-size: 10px;
+  color: #374151;
+  text-align: right;
+  line-height: 1.35;
+}
+.print-card-url {
+  font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+  font-size: 10px;
+  color: #003366;
+  word-break: break-all;
+}
+
+@media print {
+  @page { size: A4; margin: 10mm; }
+  html, body { background: #fff !important; }
+  .print-sheet {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 4mm;
+  }
+  .print-card {
+    height: 64mm;
+    border: 1px dashed #888;
+    border-radius: 4mm;
+    box-shadow: none !important;
+  }
+  .print-card-body { padding: 4mm 5mm; }
+  .print-card-name { font-size: 18pt; }
+  .print-card-code { font-size: 18pt; }
+  .print-card-qr { width: 24mm; height: 24mm; }
 }

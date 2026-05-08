@@ -16,6 +16,7 @@ import BuyerScan from './pages/BuyerScan.jsx';
 import EnrollerDashboard from './pages/EnrollerDashboard.jsx';
 import EnrollNew from './pages/EnrollNew.jsx';
 import EnrollBulk from './pages/EnrollBulk.jsx';
+import EnrollPrint from './pages/EnrollPrint.jsx';
 import Verify from './pages/Verify.jsx';
 
 export default function App() {
@@ -25,6 +26,7 @@ export default function App() {
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/claim/:code" element={<Register />} />
         <Route path="/verify/:id" element={<Verify />} />
 
         <Route
@@ -128,6 +130,14 @@ export default function App() {
           element={
             <ProtectedRoute role="enroller">
               <EnrollBulk />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/enroll/print"
+          element={
+            <ProtectedRoute role="enroller">
+              <EnrollPrint />
             </ProtectedRoute>
           }
         />
