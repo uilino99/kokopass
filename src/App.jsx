@@ -13,6 +13,9 @@ import ShipmentNew from './pages/ShipmentNew.jsx';
 import ShipmentView from './pages/ShipmentView.jsx';
 import BuyerDashboard from './pages/BuyerDashboard.jsx';
 import BuyerScan from './pages/BuyerScan.jsx';
+import EnrollerDashboard from './pages/EnrollerDashboard.jsx';
+import EnrollNew from './pages/EnrollNew.jsx';
+import EnrollBulk from './pages/EnrollBulk.jsx';
 import Verify from './pages/Verify.jsx';
 
 export default function App() {
@@ -99,6 +102,32 @@ export default function App() {
           element={
             <ProtectedRoute role="buyer">
               <BuyerScan />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Enroller routes */}
+        <Route
+          path="/enroll"
+          element={
+            <ProtectedRoute role="enroller">
+              <EnrollerDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/enroll/new"
+          element={
+            <ProtectedRoute role="enroller">
+              <EnrollNew />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/enroll/bulk"
+          element={
+            <ProtectedRoute role="enroller">
+              <EnrollBulk />
             </ProtectedRoute>
           }
         />

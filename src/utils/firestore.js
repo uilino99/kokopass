@@ -20,6 +20,7 @@ export const COLLECTIONS = {
   batches: 'batches',
   exports: 'exports',
   scans: 'scans',
+  enrollments: 'enrollments',
   transactions: 'transactions',
   weatherAlerts: 'weather_alerts',
   buyerPortfolios: 'buyer_portfolios',
@@ -186,6 +187,59 @@ export const subscribeScansByOwner = (ownerUid, cb) => {
     collection(db, COLLECTIONS.scans),
     where('ownerUid', '==', ownerUid),
     orderBy('scannedAt', 'desc')
+  );
+  return onSnapshot(q, (snap) =>
+    cb(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+  );
+};
+
+// ---------- Pre-enrollments ----------
+
+const makeClaimCode = () => {
+  // 6 chars, no ambiguous I/O/0/1.
+  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let s = '';
+  for (let i = 0; i < 6; i += 1) s += alphabet[Math.floor(Math.random() * alphabet.length)];
+  return s;
+};
+
+export const createEnrollment = async (enrollerUid, data) => {
+  const ref = await addDoc(collection(db, COLLECTIONS.enrollments), {
+    enrollerUid,
+    fullName: data.fullName?.trim() || '',
+    phone: data.phone?.trim() || '',
+    email: data.email?.trim() || '',
+    village: data.village?.trim() || '',
+    district: data.district?.trim() || '',
+    crop: data.crop || 'Cacao',
+    variety: data.variety || '',
+    sizeHectares: Number(data.sizeHectares) || 0,
+    story: data.story?.trim() || '',
+    location: data.location || null,
+    claimCode: makeClaimCode(),
+    claimed: false,
+    claimedUid: null,
+    createdAt: serverTimestamp()
+  });
+  return ref.id;
+};
+
+export const bulkCreateEnrollments = async (enrollerUid, rows) => {
+  // Single-document writes in parallel. For ≤500/burst this is fine;
+  // beyond that, batch via writeBatch (Firestore allows 500 ops/batch).
+  const results = await Promise.allSettled(
+    rows.map((r) => createEnrollment(enrollerUid, r))
+  );
+  const ok = results.filter((r) => r.status === 'fulfilled').length;
+  const failed = results.length - ok;
+  return { ok, failed };
+};
+
+export const subscribeEnrollmentsByEnroller = (enrollerUid, cb) => {
+  const q = query(
+    collection(db, COLLECTIONS.enrollments),
+    where('enrollerUid', '==', enrollerUid),
+    orderBy('createdAt', 'desc')
   );
   return onSnapshot(q, (snap) =>
     cb(snap.docs.map((d) => ({ id: d.id, ...d.data() })))

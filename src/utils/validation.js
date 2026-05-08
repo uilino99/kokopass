@@ -26,7 +26,7 @@ export const validateRegister = ({ fullName, email, password, role }) => {
   if (!fullName || fullName.trim().length < 2) errors.fullName = 'Enter your full name.';
   if (!isEmail(email)) errors.email = 'Enter a valid email.';
   if (!isStrongPassword(password)) errors.password = 'Password must be at least 6 characters.';
-  if (!['farmer', 'exporter', 'buyer'].includes(role)) errors.role = 'Pick a role.';
+  if (!['farmer', 'exporter', 'buyer', 'enroller'].includes(role)) errors.role = 'Pick a role.';
   return errors;
 };
 

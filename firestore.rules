@@ -17,7 +17,7 @@ service cloud.firestore {
       allow read: if isOwner(userId);
       allow create: if isOwner(userId)
         && request.resource.data.uid == userId
-        && request.resource.data.role in ['farmer', 'exporter', 'buyer'];
+        && request.resource.data.role in ['farmer', 'exporter', 'buyer', 'enroller'];
       allow update: if isOwner(userId)
         && request.resource.data.role == resource.data.role;
       allow delete: if false;
@@ -94,6 +94,35 @@ service cloud.firestore {
       allow create: if isSignedIn()
         && request.resource.data.actorUid == request.auth.uid;
       allow update, delete: if false;
+    }
+
+    // Pre-enrollments: village rep / NGO field officer (role='enroller')
+    // bulk-adds farmer records before those farmers have Firebase Auth
+    // accounts. Each pre-enrollment owns a `claimCode` farmers can later
+    // redeem to claim the data into their own /farms/{uid} doc.
+    match /enrollments/{enrollmentId} {
+      // Public read OK (low-risk metadata, supports lookup by code).
+      allow read: if true;
+      allow create: if isSignedIn()
+        && userRole() == 'enroller'
+        && request.resource.data.enrollerUid == request.auth.uid
+        && request.resource.data.claimed == false;
+      allow update: if isSignedIn() && (
+        // Enroller editing their own record (still unclaimed).
+        (userRole() == 'enroller'
+          && resource.data.enrollerUid == request.auth.uid
+          && resource.data.claimed == false)
+        ||
+        // Anyone can claim an unclaimed record by setting claimed/claimedUid
+        // to themselves (claim flow).
+        (resource.data.claimed == false
+          && request.resource.data.claimed == true
+          && request.resource.data.claimedUid == request.auth.uid)
+      );
+      allow delete: if isSignedIn()
+        && userRole() == 'enroller'
+        && resource.data.enrollerUid == request.auth.uid
+        && resource.data.claimed == false;
     }
 
     // Scans: a buyer's traceability portfolio. Deterministic doc IDs of

@@ -70,25 +70,32 @@ export default function BottomNav({ user, profile, onLogout }) {
   const role = profile?.role;
   const isExporter = role === 'exporter';
   const isBuyer = role === 'buyer';
+  const isEnroller = role === 'enroller';
 
   // Tab to the LEFT of the FAB — varies by role.
   const leftTab = isExporter
     ? { to: '/exporter', label: 'Shipments', icon: ICONS.box }
     : isBuyer
       ? { to: '/buyer', label: 'Portfolio', icon: ICONS.qr }
-      : { to: '/farm', label: 'Farm', icon: ICONS.leaf };
+      : isEnroller
+        ? { to: '/enroll', label: 'Roster', icon: ICONS.leaf }
+        : { to: '/farm', label: 'Farm', icon: ICONS.leaf };
 
   // The FAB destination.
   const fab = isExporter
     ? { to: '/exporter/shipments/new', label: 'New shipment' }
     : isBuyer
       ? { to: '/buyer/scan', label: 'Scan a pass' }
-      : { to: '/batches/new', label: 'New batch' };
+      : isEnroller
+        ? { to: '/enroll/new', label: 'New farmer' }
+        : { to: '/batches/new', label: 'New batch' };
 
-  // Tab to the RIGHT of the FAB — exporter gets Scan; otherwise spacer.
+  // Tab to the RIGHT of the FAB.
   const rightTab = isExporter
     ? { to: '/exporter/shipments/new', label: 'Scan', icon: ICONS.qr }
-    : null;
+    : isEnroller
+      ? { to: '/enroll/bulk', label: 'Bulk', icon: ICONS.box }
+      : null;
 
   return (
     <nav

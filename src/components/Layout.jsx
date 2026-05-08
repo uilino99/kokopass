@@ -67,7 +67,18 @@ export default function Layout({ children }) {
                   </Link>
                 </>
               )}
-              {profile?.role !== 'exporter' && profile?.role !== 'buyer' && (
+              {profile?.role === 'enroller' && (
+                <>
+                  <NavLink to="/enroll" className={linkClass}>Enrolments</NavLink>
+                  <Link
+                    to="/enroll/new"
+                    className="btn-accent !min-h-[40px] !px-4 !py-2"
+                  >
+                    + Farmer
+                  </Link>
+                </>
+              )}
+              {!['exporter', 'buyer', 'enroller'].includes(profile?.role) && (
                 <>
                   <NavLink to="/farm" className={linkClass}>Farm</NavLink>
                   <Link

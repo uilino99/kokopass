@@ -8,7 +8,8 @@ import { validateRegister, hasErrors } from '../utils/validation.js';
 const ROLES = [
   { value: 'farmer', label: 'Farmer', desc: 'I grow cacao' },
   { value: 'exporter', label: 'Exporter', desc: 'I aggregate and ship' },
-  { value: 'buyer', label: 'Buyer', desc: 'I source verified beans' }
+  { value: 'buyer', label: 'Buyer', desc: 'I source verified beans' },
+  { value: 'enroller', label: 'Enroller', desc: 'I sign up villages' }
 ];
 
 export default function Register() {
@@ -99,7 +100,7 @@ export default function Register() {
           </Field>
           <fieldset>
             <legend className="label">I am a…</legend>
-            <div className="grid gap-2 sm:grid-cols-3">
+            <div className="grid gap-2 grid-cols-2">
               {ROLES.map((r) => (
                 <label
                   key={r.value}
