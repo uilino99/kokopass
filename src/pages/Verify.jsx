@@ -8,6 +8,7 @@ import {
 } from '../utils/firestore.js';
 import { useAuth } from '../hooks/useAuth.js';
 import { FullPageSpinner } from '../components/Spinner.jsx';
+import Seo from '../components/Seo.jsx';
 
 export default function Verify() {
   const { id } = useParams();
@@ -135,8 +136,20 @@ function BatchView({ batch, saved }) {
     .join('')
     .toUpperCase();
 
+  const seoTitle = `${batch.farmName} · ${batch.weightKg} kg · Grade ${batch.quality}`;
+  const seoDesc = [
+    batch.village ? `${batch.village}, Samoa` : 'Samoa',
+    batch.harvestDate ? `Harvested ${batch.harvestDate}` : null,
+    batch.processing,
+    batch.farmerName ? `Grown by ${batch.farmerName}` : null
+  ]
+    .filter(Boolean)
+    .join(' · ');
+  const seoImage = batch.farmHeroUrl || batch.photoUrls?.[0] || '/og-image.svg';
+
   return (
     <div className="mx-auto max-w-3xl space-y-8 page">
+      <Seo title={seoTitle} description={seoDesc} image={seoImage} kind="article" />
       <SavedPill saved={saved} />
       {/* Hero */}
       <header className="relative overflow-hidden rounded-3xl border border-koko-border bg-white shadow-md animate-slide-up">
@@ -261,8 +274,21 @@ function BatchView({ batch, saved }) {
 /* ---------- Shipment verify ---------- */
 
 function ShipmentView({ shipment, batches, saved }) {
+  const seoTitle = `${shipment.destination || 'Shipment'} · ${
+    Number(shipment.totalKg ?? 0).toFixed(1)
+  } kg`;
+  const seoDesc = [
+    shipment.buyerName ? `to ${shipment.buyerName}` : null,
+    `${shipment.batchIds?.length || batches.length} batches`,
+    shipment.farmsCount != null ? `${shipment.farmsCount} farms` : null,
+    shipment.departureDate ? `Departure ${shipment.departureDate}` : null
+  ]
+    .filter(Boolean)
+    .join(' · ');
+
   return (
     <div className="mx-auto max-w-2xl space-y-8 page">
+      <Seo title={seoTitle} description={seoDesc} kind="article" />
       <SavedPill saved={saved} />
       <div className="card-elevated text-center animate-slide-up">
         <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-koko-teal100 text-koko-teal animate-bounce-sm">

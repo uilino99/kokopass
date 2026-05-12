@@ -5,6 +5,7 @@ import {
   listExportsByOwner
 } from '../utils/firestore.js';
 import { FullPageSpinner } from '../components/Spinner.jsx';
+import Seo from '../components/Seo.jsx';
 
 export default function ExporterPublic() {
   const { id } = useParams();
@@ -75,8 +76,25 @@ export default function ExporterPublic() {
 
   const initial = (profile.companyName || '?').slice(0, 1).toUpperCase();
 
+  const seoTitle = `${profile.companyName} · Verified Samoan cacao exporter`;
+  const seoDesc =
+    profile.story ||
+    [
+      profile.headquarters,
+      profile.regions?.length ? `Regions: ${profile.regions.join(', ')}` : null,
+      shipments.length ? `${shipments.length} shipment${shipments.length === 1 ? '' : 's'}` : null
+    ]
+      .filter(Boolean)
+      .join(' · ');
+
   return (
     <div className="mx-auto max-w-4xl space-y-8 page">
+      <Seo
+        title={seoTitle}
+        description={seoDesc}
+        image={profile.logoUrl || '/og-image.svg'}
+        kind="profile"
+      />
       <div className="no-print">
         <Link to="/exporters" className="btn-ghost">← Directory</Link>
       </div>

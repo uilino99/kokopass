@@ -6,6 +6,7 @@ import {
   listBatchesByOwner
 } from '../utils/firestore.js';
 import { FullPageSpinner } from '../components/Spinner.jsx';
+import Seo from '../components/Seo.jsx';
 
 export default function FarmerPublic() {
   const { uid } = useParams();
@@ -84,8 +85,26 @@ export default function FarmerPublic() {
     .join('')
     .toUpperCase();
 
+  const seoTitle = `${farmerName} · ${farm.farmName}`;
+  const seoDesc =
+    farm.story ||
+    [
+      farm.village ? `${farm.village}, Samoa` : 'Samoa',
+      farm.crop || 'Cacao',
+      farm.variety,
+      totalBatches != null ? `${totalBatches} batches verified` : null
+    ]
+      .filter(Boolean)
+      .join(' · ');
+
   return (
     <div className="mx-auto max-w-4xl space-y-8 page">
+      <Seo
+        title={seoTitle}
+        description={seoDesc}
+        image={farm.heroUrl || avatarUrl || '/og-image.svg'}
+        kind="profile"
+      />
       <div className="no-print">
         <Link to="/" className="btn-ghost">← Home</Link>
       </div>
