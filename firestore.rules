@@ -101,6 +101,14 @@ service cloud.firestore {
       allow write: if false; // written by Cloud Functions / admin SDK
     }
 
+    // Server-maintained global aggregates (written by Cloud Functions only).
+    // Public read so the Landing page could prefer this over per-collection
+    // counts once the functions are deployed.
+    match /aggregates/{docId} {
+      allow read: if true;
+      allow write: if false; // admin SDK bypasses rules
+    }
+
     // Audit logs: append-only, never client-readable.
     match /audit_logs/{logId} {
       allow read: if false;

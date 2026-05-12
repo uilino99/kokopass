@@ -67,6 +67,15 @@ npm run deploy                          # build + hosting
 npm run deploy:rules                    # firestore rules
 firebase deploy --only firestore:indexes
 firebase deploy --only storage          # storage rules
+firebase deploy --only functions        # Cloud Functions (see functions/README.md)
+```
+
+Cloud Functions live in `functions/` and require the **Blaze** plan. They're optional for the MVP — the client app works without them. See [functions/README.md](functions/README.md) for the trigger/schedule/webhook scaffolding.
+
+To run everything locally with the emulators:
+
+```powershell
+firebase emulators:start
 ```
 
 ## 4. Firestore data model
