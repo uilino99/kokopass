@@ -133,10 +133,10 @@ export default function Landing() {
           <div className="mt-6 flex flex-wrap justify-center gap-3 sm:mt-0 sm:justify-end">
             <Link to="/register" className="btn-accent">Request access</Link>
             <Link
-              to="/login"
+              to="/exporters"
               className="btn !bg-white/10 text-white hover:!bg-white/20 border border-white/20"
             >
-              Partner sign-in
+              See exporters
             </Link>
           </div>
         </div>

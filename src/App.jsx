@@ -9,6 +9,8 @@ import FarmProfile from './pages/FarmProfile.jsx';
 import BatchNew from './pages/BatchNew.jsx';
 import BatchView from './pages/BatchView.jsx';
 import ExporterDashboard from './pages/ExporterDashboard.jsx';
+import ExporterProfile from './pages/ExporterProfile.jsx';
+import Exporters from './pages/Exporters.jsx';
 import ShipmentNew from './pages/ShipmentNew.jsx';
 import ShipmentView from './pages/ShipmentView.jsx';
 import BuyerDashboard from './pages/BuyerDashboard.jsx';
@@ -28,6 +30,7 @@ export default function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/claim/:code" element={<Register />} />
         <Route path="/verify/:id" element={<Verify />} />
+        <Route path="/exporters" element={<Exporters />} />
 
         <Route
           path="/dashboard"
@@ -86,6 +89,14 @@ export default function App() {
           element={
             <ProtectedRoute role="exporter">
               <ShipmentView />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/exporter/profile"
+          element={
+            <ProtectedRoute role="exporter">
+              <ExporterProfile />
             </ProtectedRoute>
           }
         />

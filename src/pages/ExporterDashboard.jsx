@@ -34,7 +34,10 @@ export default function ExporterDashboard() {
             consignment.
           </p>
         </div>
-        <Link to="/exporter/shipments/new" className="btn-accent">+ New shipment</Link>
+        <div className="flex flex-wrap gap-2">
+          <Link to="/exporter/profile" className="btn-secondary">Edit profile</Link>
+          <Link to="/exporter/shipments/new" className="btn-accent">+ New shipment</Link>
+        </div>
       </header>
 
       <div className="grid gap-5 sm:grid-cols-3">

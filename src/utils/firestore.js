@@ -106,6 +106,39 @@ export const writeAuditLog = (entry) =>
     at: serverTimestamp()
   });
 
+// ---------- Exporter profiles ----------
+
+export const getExporterProfile = async (uid) => {
+  const snap = await getDoc(doc(db, 'exporterProfiles', uid));
+  return snap.exists() ? { id: snap.id, ...snap.data() } : null;
+};
+
+export const upsertExporterProfile = (uid, data) =>
+  setDoc(
+    doc(db, 'exporterProfiles', uid),
+    {
+      ...data,
+      ownerUid: uid,
+      updatedAt: serverTimestamp()
+    },
+    { merge: true }
+  );
+
+export const listPublicExporterProfiles = async () => {
+  const q = query(
+    collection(db, 'exporterProfiles'),
+    where('public', '==', true)
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+};
+
+export const countExportsByOwner = async (ownerUid) => {
+  const q = query(collection(db, COLLECTIONS.exports), where('ownerUid', '==', ownerUid));
+  const snap = await getCountFromServer(q);
+  return snap.data().count;
+};
+
 // ---------- Aggregate counters (Landing) ----------
 
 let _aggregateCache = null;

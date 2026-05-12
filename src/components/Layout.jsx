@@ -48,6 +48,7 @@ export default function Layout({ children }) {
               {profile?.role === 'exporter' && (
                 <>
                   <NavLink to="/exporter" className={linkClass}>Shipments</NavLink>
+                  <NavLink to="/exporter/profile" className={linkClass}>Profile</NavLink>
                   <Link
                     to="/exporter/shipments/new"
                     className="btn-accent !min-h-[40px] !px-4 !py-2"
@@ -95,6 +96,9 @@ export default function Layout({ children }) {
             </nav>
           ) : (
             <nav className="flex items-center gap-2">
+              <NavLink to="/exporters" className="btn-ghost hidden sm:inline-flex">
+                Exporters
+              </NavLink>
               <Link to="/login" className="btn-ghost">Sign in</Link>
               <Link to="/register" className="btn-accent !min-h-[40px] !px-4 !py-2">Register</Link>
             </nav>
