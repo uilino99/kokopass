@@ -189,6 +189,47 @@ export const subscribeInquiriesForTarget = (targetUid, cb) => {
 export const updateInquiry = (id, updates) =>
   setDoc(doc(db, 'inquiries', id), updates, { merge: true });
 
+// ---------- Region breakdown (Impact) ----------
+
+let _regionCache = null;
+let _regionInflight = null;
+
+/**
+ * Group farms by district. Reads all farms client-side (capped at
+ * `max`) and tallies. Cached at module scope so a page navigation
+ * doesn't re-bill. Moves to a Function-maintained
+ * `aggregates/regions/{district}` doc set when scale demands it.
+ */
+export function fetchRegionStats({ force = false, max = 1000 } = {}) {
+  if (!force && _regionCache) return Promise.resolve(_regionCache);
+  if (_regionInflight) return _regionInflight;
+  _regionInflight = (async () => {
+    try {
+      const q = query(
+        collection(db, COLLECTIONS.farms),
+        limit(max + 1)
+      );
+      const snap = await getDocs(q);
+      const counts = new Map();
+      let total = 0;
+      snap.forEach((d) => {
+        const data = d.data();
+        const district = (data.district || data.village || 'Unknown').trim() || 'Unknown';
+        counts.set(district, (counts.get(district) || 0) + 1);
+        total += 1;
+      });
+      const rows = [...counts.entries()]
+        .map(([district, farms]) => ({ district, farms }))
+        .sort((a, b) => b.farms - a.farms);
+      _regionCache = { rows, total, truncated: total > max };
+      return _regionCache;
+    } finally {
+      _regionInflight = null;
+    }
+  })();
+  return _regionInflight;
+}
+
 // ---------- Aggregate counters (Landing) ----------
 
 let _aggregateCache = null;

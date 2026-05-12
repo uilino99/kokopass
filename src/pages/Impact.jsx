@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { fetchAggregateCounts } from '../utils/firestore.js';
+import { fetchAggregateCounts, fetchRegionStats } from '../utils/firestore.js';
 import Seo from '../components/Seo.jsx';
+import { Skeleton } from '../components/Skeleton.jsx';
 
 function useCountUp(target, durationMs = 1100) {
   const [value, setValue] = useState(0);
@@ -30,6 +31,7 @@ function useCountUp(target, durationMs = 1100) {
 
 export default function Impact() {
   const [counts, setCounts] = useState(null);
+  const [regions, setRegions] = useState(null);
 
   useEffect(() => {
     let active = true;
@@ -48,6 +50,13 @@ export default function Impact() {
             kg: null,
             shippedKg: null
           });
+      });
+    fetchRegionStats()
+      .then((r) => {
+        if (active) setRegions(r);
+      })
+      .catch(() => {
+        if (active) setRegions({ rows: [], total: 0, truncated: false });
       });
     return () => {
       active = false;
@@ -134,6 +143,50 @@ export default function Impact() {
         />
       </section>
 
+      {/* Per-region breakdown */}
+      <section className="card-elevated animate-slide-up">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="eyebrow">By region</p>
+            <h2 className="mt-1 font-display text-2xl text-koko-ink sm:text-3xl">
+              Farms across Samoa
+            </h2>
+          </div>
+          <span className="text-sm text-koko-muted">
+            {regions
+              ? `${regions.rows.length} district${regions.rows.length === 1 ? '' : 's'}`
+              : ''}
+          </span>
+        </div>
+
+        {!regions && (
+          <div className="mt-5 space-y-2">
+            <Skeleton className="h-6 w-full" />
+            <Skeleton className="h-6 w-full" />
+            <Skeleton className="h-6 w-3/4" />
+          </div>
+        )}
+
+        {regions && regions.rows.length === 0 && (
+          <p className="mt-4 text-sm text-koko-muted">
+            No farm profiles yet. As farmers register and pin their location, district counts
+            will populate here.
+          </p>
+        )}
+
+        {regions && regions.rows.length > 0 && (
+          <>
+            <RegionBars rows={regions.rows} total={regions.total} />
+            {regions.truncated && (
+              <p className="helper mt-3">
+                Showing the first 1,000 farms. A server-maintained aggregate will replace
+                this once the pilot grows beyond that.
+              </p>
+            )}
+          </>
+        )}
+      </section>
+
       {/* CTA strip */}
       <section className="overflow-hidden rounded-3xl bg-navy-grad text-white shadow-lg">
         <div className="px-6 py-12 sm:px-12 sm:py-16">
@@ -168,6 +221,40 @@ export default function Impact() {
         <Link to="/exporters" className="text-koko-teal hover:underline">Browse exporters</Link>.
       </p>
     </div>
+  );
+}
+
+function RegionBars({ rows, total }) {
+  const max = Math.max(...rows.map((r) => r.farms), 1);
+  return (
+    <ul className="mt-5 space-y-3">
+      {rows.map((r, i) => {
+        const pct = total > 0 ? Math.round((r.farms / total) * 100) : 0;
+        const width = Math.max(2, Math.round((r.farms / max) * 100));
+        return (
+          <li
+            key={r.district}
+            className="animate-slide-up"
+            style={{ animationDelay: `${Math.min(i * 30, 240)}ms` }}
+          >
+            <div className="mb-1 flex items-baseline justify-between text-sm">
+              <span className="font-medium text-koko-ink">{r.district}</span>
+              <span className="text-koko-muted">
+                <span className="font-display text-lg text-koko-ink">{r.farms}</span>{' '}
+                farm{r.farms === 1 ? '' : 's'}
+                <span className="ml-2 text-2xs text-koko-faint">{pct}%</span>
+              </span>
+            </div>
+            <div className="h-2 w-full overflow-hidden rounded-full bg-koko-borderSoft">
+              <div
+                className="h-full rounded-full bg-teal-grad transition-[width] duration-700 ease-out-quint"
+                style={{ width: `${width}%` }}
+              />
+            </div>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 
