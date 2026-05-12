@@ -6,6 +6,7 @@ import {
 } from '../utils/firestore.js';
 import { FullPageSpinner } from '../components/Spinner.jsx';
 import Seo from '../components/Seo.jsx';
+import InquiryForm from '../components/InquiryForm.jsx';
 
 export default function ExporterPublic() {
   const { id } = useParams();
@@ -169,6 +170,14 @@ export default function ExporterPublic() {
         <Stat label="Batches aggregated" value={stats.batches} sub="Across shipments" />
         <Stat label="Destinations" value={stats.destinations} sub="Countries / buyers" />
       </div>
+
+      {/* Inquiry form */}
+      <section className="animate-slide-up">
+        <InquiryForm
+          targetUid={profile.ownerUid || profile.id}
+          targetName={profile.companyName}
+        />
+      </section>
 
       {/* Recent shipments */}
       <section>

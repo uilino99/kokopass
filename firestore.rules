@@ -65,6 +65,27 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // Inquiries — lead-capture form on public exporter pages. Anyone
+    // (signed in or not) can submit; only the target exporter can read
+    // and update their inbox.
+    match /inquiries/{id} {
+      allow read: if isSignedIn()
+        && resource.data.targetUid == request.auth.uid;
+      allow create: if
+        request.resource.data.targetUid is string
+        && request.resource.data.targetUid.size() > 0
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.message is string
+        && request.resource.data.message.size() > 0
+        && request.resource.data.message.size() < 2000
+        && request.resource.data.status == 'new';
+      allow update: if isSignedIn()
+        && resource.data.targetUid == request.auth.uid
+        && request.resource.data.targetUid == resource.data.targetUid;
+      allow delete: if false;
+    }
+
     // Transactions: payments / sales between farmers and exporters.
     match /transactions/{txId} {
       allow read: if isSignedIn() && (

@@ -157,6 +157,38 @@ export const listExportsByOwner = async (ownerUid, max = 12) => {
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 };
 
+// ---------- Inquiries (lead capture on /exporters/<uid>) ----------
+
+export const createInquiry = async (input) => {
+  const ref = await addDoc(collection(db, 'inquiries'), {
+    targetUid: String(input.targetUid),
+    targetKind: input.targetKind || 'exporter',
+    name: String(input.name || '').trim(),
+    email: String(input.email || '').trim(),
+    phone: String(input.phone || '').trim(),
+    company: String(input.company || '').trim(),
+    message: String(input.message || '').trim(),
+    shipmentId: input.shipmentId || null,
+    status: 'new',
+    createdAt: serverTimestamp()
+  });
+  return ref.id;
+};
+
+export const subscribeInquiriesForTarget = (targetUid, cb) => {
+  const q = query(
+    collection(db, 'inquiries'),
+    where('targetUid', '==', targetUid),
+    orderBy('createdAt', 'desc')
+  );
+  return onSnapshot(q, (snap) =>
+    cb(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+  );
+};
+
+export const updateInquiry = (id, updates) =>
+  setDoc(doc(db, 'inquiries', id), updates, { merge: true });
+
 // ---------- Aggregate counters (Landing) ----------
 
 let _aggregateCache = null;

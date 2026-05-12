@@ -1,13 +1,21 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.js';
-import { subscribeExportsByOwner } from '../utils/firestore.js';
+import { useToast } from '../components/Toast.jsx';
+import {
+  subscribeExportsByOwner,
+  subscribeInquiriesForTarget,
+  updateInquiry
+} from '../utils/firestore.js';
 import { Skeleton, SkeletonCard } from '../components/Skeleton.jsx';
 
 export default function ExporterDashboard() {
   const { user, profile } = useAuth();
+  const toast = useToast();
   const [shipments, setShipments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [inquiries, setInquiries] = useState([]);
+  const [inqLoading, setInqLoading] = useState(true);
 
   useEffect(() => {
     const unsub = subscribeExportsByOwner(user.uid, (rows) => {
@@ -16,6 +24,32 @@ export default function ExporterDashboard() {
     });
     return unsub;
   }, [user.uid]);
+
+  useEffect(() => {
+    const unsub = subscribeInquiriesForTarget(user.uid, (rows) => {
+      setInquiries(rows);
+      setInqLoading(false);
+    });
+    return unsub;
+  }, [user.uid]);
+
+  const unreadInquiries = inquiries.filter((i) => i.status === 'new').length;
+
+  const markRead = async (id) => {
+    try {
+      await updateInquiry(id, { targetUid: user.uid, status: 'read' });
+    } catch (err) {
+      toast.error(err.message || 'Could not update.');
+    }
+  };
+
+  const archive = async (id) => {
+    try {
+      await updateInquiry(id, { targetUid: user.uid, status: 'archived' });
+    } catch (err) {
+      toast.error(err.message || 'Could not archive.');
+    }
+  };
 
   const totalKg = shipments.reduce((acc, s) => acc + (Number(s.totalKg) || 0), 0);
   const totalBatches = shipments.reduce((acc, s) => acc + (s.batchIds?.length || 0), 0);
@@ -40,11 +74,110 @@ export default function ExporterDashboard() {
         </div>
       </header>
 
-      <div className="grid gap-5 sm:grid-cols-3">
+      <div className="grid gap-5 sm:grid-cols-4">
         <Stat label="Shipments" value={loading ? null : shipments.length} sub="Consignments minted" />
         <Stat label="Batches aggregated" value={loading ? null : totalBatches} sub="Across all shipments" />
         <Stat label="Total exported" value={loading ? null : `${totalKg.toFixed(1)} kg`} sub="Verified cacao" />
+        <Stat
+          label="Inquiries"
+          value={inqLoading ? null : inquiries.length}
+          sub={unreadInquiries ? `${unreadInquiries} unread` : 'All caught up'}
+        />
       </div>
+
+      {/* Inquiries inbox */}
+      <section>
+        <div className="mb-5 flex items-end justify-between">
+          <div>
+            <p className="eyebrow">Inbox</p>
+            <h2 className="mt-1 font-display text-2xl text-koko-ink sm:text-3xl">
+              Inquiries
+              {unreadInquiries > 0 && (
+                <span className="ml-2 align-middle">
+                  <span className="badge-error">{unreadInquiries} new</span>
+                </span>
+              )}
+            </h2>
+          </div>
+        </div>
+
+        {inqLoading && <SkeletonCard />}
+
+        {!inqLoading && inquiries.length === 0 && (
+          <div className="card text-center text-koko-muted">
+            No inquiries yet. Share your{' '}
+            <Link to={`/exporters/${user.uid}`} className="text-koko-teal hover:underline">
+              public profile
+            </Link>{' '}
+            to start collecting leads.
+          </div>
+        )}
+
+        {!inqLoading && inquiries.length > 0 && (
+          <ul className="grid gap-3">
+            {inquiries.slice(0, 10).map((q) => (
+              <li
+                key={q.id}
+                className={`card animate-slide-up ${
+                  q.status === 'new' ? 'border-koko-teal/40 bg-koko-teal100/30' : ''
+                }`}
+              >
+                <div className="flex flex-wrap items-baseline gap-2">
+                  <span className="font-semibold text-koko-ink">{q.name}</span>
+                  {q.company && (
+                    <span className="text-sm text-koko-muted">· {q.company}</span>
+                  )}
+                  <span className="ml-auto text-2xs text-koko-faint">
+                    {q.status === 'new' && <span className="badge-error mr-2">New</span>}
+                    {q.status === 'archived' && <span className="badge-navy mr-2">Archived</span>}
+                  </span>
+                </div>
+                <p className="mt-2 text-sm text-koko-body whitespace-pre-line">
+                  {q.message}
+                </p>
+                <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-koko-muted">
+                  {q.email && (
+                    <a
+                      href={`mailto:${q.email}?subject=Re: your KokoPass inquiry`}
+                      className="btn-secondary !min-h-[32px] !px-3 !py-1 text-xs"
+                    >
+                      ✉ {q.email}
+                    </a>
+                  )}
+                  {q.phone && (
+                    <a
+                      href={`tel:${q.phone}`}
+                      className="btn-secondary !min-h-[32px] !px-3 !py-1 text-xs"
+                    >
+                      ☎ {q.phone}
+                    </a>
+                  )}
+                  <span className="ml-auto flex gap-1">
+                    {q.status === 'new' && (
+                      <button
+                        type="button"
+                        onClick={() => markRead(q.id)}
+                        className="btn-ghost !min-h-[32px] !px-2 !py-1 text-xs"
+                      >
+                        Mark read
+                      </button>
+                    )}
+                    {q.status !== 'archived' && (
+                      <button
+                        type="button"
+                        onClick={() => archive(q.id)}
+                        className="btn-ghost !min-h-[32px] !px-2 !py-1 text-xs"
+                      >
+                        Archive
+                      </button>
+                    )}
+                  </span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       <section>
         <div className="mb-5 flex items-end justify-between">
