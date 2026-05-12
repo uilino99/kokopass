@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import {
   getBatch,
   getExport,
@@ -188,6 +188,17 @@ function BatchView({ batch, saved }) {
             <blockquote className="mt-6 border-l-2 border-koko-teal pl-4 font-display text-lg italic text-koko-ink sm:text-xl">
               “{batch.farmStory}”
             </blockquote>
+          )}
+
+          {batch.farmId && (
+            <div className="mt-6">
+              <Link
+                to={`/farmers/${batch.farmId}`}
+                className="text-sm font-semibold text-koko-teal hover:underline"
+              >
+                More from this farmer →
+              </Link>
+            </div>
           )}
         </div>
       </header>

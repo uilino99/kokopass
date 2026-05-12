@@ -12,6 +12,7 @@ import ExporterDashboard from './pages/ExporterDashboard.jsx';
 import ExporterProfile from './pages/ExporterProfile.jsx';
 import Exporters from './pages/Exporters.jsx';
 import ExporterPublic from './pages/ExporterPublic.jsx';
+import FarmerPublic from './pages/FarmerPublic.jsx';
 import ShipmentNew from './pages/ShipmentNew.jsx';
 import ShipmentView from './pages/ShipmentView.jsx';
 import BuyerDashboard from './pages/BuyerDashboard.jsx';
@@ -33,6 +34,7 @@ export default function App() {
         <Route path="/verify/:id" element={<Verify />} />
         <Route path="/exporters" element={<Exporters />} />
         <Route path="/exporters/:id" element={<ExporterPublic />} />
+        <Route path="/farmers/:uid" element={<FarmerPublic />} />
 
         <Route
           path="/dashboard"

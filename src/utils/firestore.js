@@ -90,14 +90,21 @@ export const subscribeBatch = (id, cb) =>
     cb(snap.exists() ? { id: snap.id, ...snap.data() } : null)
   );
 
-export const listBatchesByOwner = async (ownerUid) => {
-  const q = query(
-    collection(db, COLLECTIONS.batches),
+export const listBatchesByOwner = async (ownerUid, max) => {
+  const constraints = [
     where('ownerUid', '==', ownerUid),
     orderBy('createdAt', 'desc')
-  );
+  ];
+  if (Number.isFinite(max) && max > 0) constraints.push(limit(max));
+  const q = query(collection(db, COLLECTIONS.batches), ...constraints);
   const snap = await getDocs(q);
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+};
+
+export const countBatchesByOwner = async (ownerUid) => {
+  const q = query(collection(db, COLLECTIONS.batches), where('ownerUid', '==', ownerUid));
+  const snap = await getCountFromServer(q);
+  return snap.data().count;
 };
 
 export const writeAuditLog = (entry) =>
