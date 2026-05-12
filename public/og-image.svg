@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#003366"/>
+      <stop offset="1" stop-color="#001428"/>
+    </linearGradient>
+    <linearGradient id="pod" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5DCAA5"/>
+      <stop offset="1" stop-color="#1D9E75"/>
+    </linearGradient>
+    <radialGradient id="halo" cx="0.2" cy="0.1" r="0.9">
+      <stop offset="0" stop-color="#1D9E75" stop-opacity="0.20"/>
+      <stop offset="1" stop-color="#001428" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect width="1200" height="630" fill="url(#halo)"/>
+
+  <!-- Cacao pod mark, large left -->
+  <g transform="translate(85, 175)">
+    <rect x="-25" y="-25" width="280" height="280" rx="56" fill="#001428"/>
+    <path
+      d="M115 25c-15 22-60 45-60 105 0 50 30 95 60 135 30-40 60-85 60-135 0-60-45-83-60-105z"
+      fill="url(#pod)"
+    />
+    <path d="M115 35v210" stroke="#001428" stroke-width="3" opacity="0.45" fill="none"/>
+    <path d="M85 55 C 55 110, 55 175, 95 235" stroke="#001428" stroke-width="3" opacity="0.35" fill="none"/>
+    <path d="M145 55 C 175 110, 175 175, 135 235" stroke="#001428" stroke-width="3" opacity="0.35" fill="none"/>
+  </g>
+
+  <!-- Type block -->
+  <g transform="translate(440, 130)" font-family="Cormorant Garamond, Playfair Display, Georgia, serif">
+    <text fill="#5DCAA5" font-size="22" letter-spacing="6" font-weight="600">SAMOA · SINGLE-ORIGIN CACAO</text>
+
+    <text y="125" fill="#F4EAD7" font-size="120" font-weight="600" letter-spacing="-3">
+      KokoPass
+    </text>
+
+    <text y="220" fill="#F5F7F2" font-size="56" font-weight="500">
+      Verified, bean to bar.
+    </text>
+
+    <text y="280" fill="#5DCAA5" font-size="40" font-style="italic" font-weight="500">
+      Scan any QR. See the farmer.
+    </text>
+
+    <!-- gold rule -->
+    <line x1="0" y1="330" x2="640" y2="330" stroke="#1D9E75" stroke-width="3" opacity="0.6"/>
+
+    <text x="0" y="380" fill="#cdd9ec" font-size="26" font-family="DM Sans, system-ui, sans-serif">
+      Farmer · Exporter · Buyer — every bag, traceable to its source.
+    </text>
+  </g>
+
+  <!-- bottom-right URL -->
+  <g transform="translate(1115, 580)" text-anchor="end" font-family="DM Sans, system-ui, sans-serif">
+    <text fill="#5DCAA5" font-size="22" font-weight="600" letter-spacing="3">kokopass.web.app</text>
+  </g>
+</svg>

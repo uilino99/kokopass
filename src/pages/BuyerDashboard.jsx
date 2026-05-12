@@ -4,10 +4,25 @@ import { useAuth } from '../hooks/useAuth.js';
 import { subscribeScansByOwner } from '../utils/firestore.js';
 import { Skeleton, SkeletonCard } from '../components/Skeleton.jsx';
 
+const KIND_OPTIONS = [
+  { value: 'all', label: 'All scans' },
+  { value: 'batch', label: 'Batches only' },
+  { value: 'shipment', label: 'Shipments only' }
+];
+
+const SORT_OPTIONS = [
+  { value: 'recent', label: 'Most recent' },
+  { value: 'oldest', label: 'Oldest first' },
+  { value: 'heaviest', label: 'Heaviest first' }
+];
+
 export default function BuyerDashboard() {
   const { user, profile } = useAuth();
   const [scans, setScans] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [kind, setKind] = useState('all');
+  const [sort, setSort] = useState('recent');
 
   useEffect(() => {
     const unsub = subscribeScansByOwner(user.uid, (rows) => {
@@ -40,6 +55,34 @@ export default function BuyerDashboard() {
     }
     return { totalKg, bags, farms: farms.size, shipments };
   }, [scans]);
+
+  const filteredScans = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    let rows = scans.filter((s) => {
+      if (kind !== 'all' && (s.refKind || 'batch') !== kind) return false;
+      if (!q) return true;
+      const sum = s.summary || {};
+      const haystack = [
+        s.refId,
+        sum.farmName,
+        sum.village,
+        sum.destination,
+        sum.buyerName,
+        sum.quality
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      return haystack.includes(q);
+    });
+    if (sort === 'oldest') {
+      rows = [...rows].sort((a, b) => secondsOf(a.scannedAt) - secondsOf(b.scannedAt));
+    } else if (sort === 'heaviest') {
+      rows = [...rows].sort((a, b) => weightOf(b) - weightOf(a));
+    }
+    // 'recent' is the default Firestore order — no sort needed.
+    return rows;
+  }, [scans, search, kind, sort]);
 
   const firstName = profile?.fullName?.split(' ')[0] || 'partner';
 
@@ -74,6 +117,53 @@ export default function BuyerDashboard() {
           <Link to="/buyer/scan" className="btn-ghost">+ Scan</Link>
         </div>
 
+        {!loading && scans.length > 0 && (
+          <div className="card mb-5 animate-slide-up">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <input
+                className="input flex-1"
+                placeholder="Search farm, village, destination, batch ID…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+              <select
+                className="input sm:!w-44"
+                value={kind}
+                onChange={(e) => setKind(e.target.value)}
+              >
+                {KIND_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </select>
+              <select
+                className="input sm:!w-44"
+                value={sort}
+                onChange={(e) => setSort(e.target.value)}
+              >
+                {SORT_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </select>
+            </div>
+            <p className="helper mt-2">
+              Showing {filteredScans.length} of {scans.length} scan
+              {scans.length === 1 ? '' : 's'}
+              {(search || kind !== 'all') && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearch('');
+                    setKind('all');
+                  }}
+                  className="ml-2 text-koko-teal hover:underline"
+                >
+                  Clear filters
+                </button>
+              )}
+            </p>
+          </div>
+        )}
+
         {loading && (
           <div className="grid gap-4 sm:grid-cols-2">
             <SkeletonCard />
@@ -96,9 +186,15 @@ export default function BuyerDashboard() {
           </div>
         )}
 
-        {!loading && scans.length > 0 && (
+        {!loading && scans.length > 0 && filteredScans.length === 0 && (
+          <div className="card text-center text-koko-muted">
+            No scans match those filters.
+          </div>
+        )}
+
+        {!loading && filteredScans.length > 0 && (
           <ul className="grid gap-4 sm:grid-cols-2">
-            {scans.map((s, i) => (
+            {filteredScans.map((s, i) => (
               <li
                 key={s.id}
                 className="animate-slide-up"
@@ -180,6 +276,19 @@ function Stat({ label, value, sub }) {
       {sub && <p className="mt-1 text-xs text-koko-muted">{sub}</p>}
     </div>
   );
+}
+
+function secondsOf(ts) {
+  if (!ts) return 0;
+  if (typeof ts.seconds === 'number') return ts.seconds;
+  if (ts.toDate) return Math.floor(ts.toDate().getTime() / 1000);
+  return 0;
+}
+
+function weightOf(s) {
+  const sum = s.summary || {};
+  if (s.refKind === 'shipment') return Number(sum.totalKg) || 0;
+  return Number(sum.weightKg) || 0;
 }
 
 function fmtTime(ts) {
