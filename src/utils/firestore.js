@@ -275,6 +275,9 @@ export const subscribeScansByOwner = (ownerUid, cb) => {
   );
 };
 
+export const updateScan = (scanId, updates) =>
+  setDoc(doc(db, COLLECTIONS.scans, scanId), updates, { merge: true });
+
 // ---------- Pre-enrollments ----------
 
 const makeClaimCode = () => {

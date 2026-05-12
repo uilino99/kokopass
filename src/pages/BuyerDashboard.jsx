@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.js';
-import { subscribeScansByOwner } from '../utils/firestore.js';
+import { subscribeScansByOwner, updateScan } from '../utils/firestore.js';
+import { useToast } from '../components/Toast.jsx';
 import { Skeleton, SkeletonCard } from '../components/Skeleton.jsx';
+import Spinner from '../components/Spinner.jsx';
 
 const KIND_OPTIONS = [
   { value: 'all', label: 'All scans' },
@@ -18,11 +20,13 @@ const SORT_OPTIONS = [
 
 export default function BuyerDashboard() {
   const { user, profile } = useAuth();
+  const toast = useToast();
   const [scans, setScans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [kind, setKind] = useState('all');
   const [sort, setSort] = useState('recent');
+  const [editingId, setEditingId] = useState(null);
 
   useEffect(() => {
     const unsub = subscribeScansByOwner(user.uid, (rows) => {
@@ -68,7 +72,9 @@ export default function BuyerDashboard() {
         sum.village,
         sum.destination,
         sum.buyerName,
-        sum.quality
+        sum.quality,
+        s.note,
+        ...(s.tags || [])
       ]
         .filter(Boolean)
         .join(' ')
@@ -200,30 +206,123 @@ export default function BuyerDashboard() {
                 className="animate-slide-up"
                 style={{ animationDelay: `${Math.min(i * 50, 300)}ms` }}
               >
-                <Link to={`/verify/${s.refId}`} className="card-hover block">
-                  <div className="flex items-center justify-between">
-                    <span className="badge-navy capitalize">{s.refKind || 'batch'}</span>
-                    <span className="text-2xs text-koko-faint">
-                      {fmtTime(s.scannedAt)}
-                    </span>
-                  </div>
-
-                  {s.refKind === 'shipment' ? (
-                    <ShipmentSummary s={s} />
-                  ) : (
-                    <BatchSummary s={s} />
-                  )}
-
-                  <div className="divider !my-4" />
-                  <p className="font-mono text-2xs text-koko-faint break-all">
-                    {s.refId}
-                  </p>
-                </Link>
+                <ScanTile
+                  scan={s}
+                  isEditing={editingId === s.id}
+                  onEdit={() => setEditingId(s.id)}
+                  onCancel={() => setEditingId(null)}
+                  onSave={async ({ note, tags }) => {
+                    try {
+                      await updateScan(s.id, { note, tags });
+                      toast.success('Saved.');
+                      setEditingId(null);
+                    } catch (err) {
+                      toast.error(err.message || 'Could not save.');
+                    }
+                  }}
+                />
               </li>
             ))}
           </ul>
         )}
       </section>
+    </div>
+  );
+}
+
+function ScanTile({ scan, isEditing, onEdit, onCancel, onSave }) {
+  const [note, setNote] = useState(scan.note || '');
+  const [tagsText, setTagsText] = useState((scan.tags || []).join(', '));
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (isEditing) {
+      setNote(scan.note || '');
+      setTagsText((scan.tags || []).join(', '));
+    }
+  }, [isEditing, scan.note, scan.tags]);
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    const tags = tagsText
+      .split(',')
+      .map((t) => t.trim())
+      .filter(Boolean)
+      .slice(0, 12);
+    await onSave({ note: note.trim(), tags });
+    setSaving(false);
+  };
+
+  return (
+    <div className="card-hover">
+      <Link to={`/verify/${scan.refId}`} className="block">
+        <div className="flex items-center justify-between">
+          <span className="badge-navy capitalize">{scan.refKind || 'batch'}</span>
+          <span className="text-2xs text-koko-faint">{fmtTime(scan.scannedAt)}</span>
+        </div>
+        {scan.refKind === 'shipment' ? <ShipmentSummary s={scan} /> : <BatchSummary s={scan} />}
+      </Link>
+
+      {scan.tags?.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {scan.tags.map((t) => (
+            <span key={t} className="badge-teal">#{t}</span>
+          ))}
+        </div>
+      )}
+
+      {scan.note && !isEditing && (
+        <p className="mt-3 rounded-lg bg-koko-bg/60 p-3 text-sm italic text-koko-body">
+          “{scan.note}”
+        </p>
+      )}
+
+      <div className="divider !my-4" />
+
+      {!isEditing ? (
+        <div className="flex items-center justify-between text-xs text-koko-muted">
+          <span className="break-all font-mono text-2xs">{scan.refId.slice(0, 12)}…</span>
+          <button
+            type="button"
+            onClick={onEdit}
+            className="text-koko-teal transition hover:underline"
+          >
+            {scan.note || scan.tags?.length ? 'Edit note' : '+ Add note'}
+          </button>
+        </div>
+      ) : (
+        <form onSubmit={handleSave} className="space-y-3">
+          <div>
+            <label className="label">Note</label>
+            <textarea
+              className="input min-h-[80px] text-sm"
+              placeholder="Tasting notes, sourcing context, anything you want to remember…"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              autoFocus
+            />
+          </div>
+          <div>
+            <label className="label">Tags</label>
+            <input
+              className="input text-sm"
+              placeholder="comma, separated, e.g. fruity, single-origin, Q1"
+              value={tagsText}
+              onChange={(e) => setTagsText(e.target.value)}
+            />
+            <p className="helper">Up to 12 tags.</p>
+          </div>
+          <div className="flex justify-end gap-2">
+            <button type="button" onClick={onCancel} className="btn-ghost !min-h-[36px]">
+              Cancel
+            </button>
+            <button className="btn-accent !min-h-[36px] !px-4 !py-1.5" disabled={saving}>
+              {saving && <Spinner size="sm" />} {saving ? 'Saving…' : 'Save'}
+            </button>
+          </div>
+        </form>
+      )}
     </div>
   );
 }
