@@ -139,6 +139,17 @@ export const countExportsByOwner = async (ownerUid) => {
   return snap.data().count;
 };
 
+export const listExportsByOwner = async (ownerUid, max = 12) => {
+  const q = query(
+    collection(db, COLLECTIONS.exports),
+    where('ownerUid', '==', ownerUid),
+    orderBy('createdAt', 'desc'),
+    limit(max)
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+};
+
 // ---------- Aggregate counters (Landing) ----------
 
 let _aggregateCache = null;

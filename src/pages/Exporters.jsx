@@ -148,7 +148,7 @@ export default function Exporters() {
 function ExporterCard({ profile, shipmentCount }) {
   const initial = (profile.companyName || '?').slice(0, 1).toUpperCase();
   return (
-    <article className="card-hover h-full">
+    <Link to={`/exporters/${profile.id}`} className="card-hover block h-full">
       <div className="flex items-start gap-4">
         <div className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-2xl border border-koko-border bg-koko-bg">
           {profile.logoUrl ? (
@@ -195,35 +195,8 @@ function ExporterCard({ profile, shipmentCount }) {
             <span className="text-koko-faint">—</span>
           )}
         </div>
-        <div className="flex flex-wrap justify-end gap-1.5">
-          {profile.email && (
-            <a
-              href={`mailto:${profile.email}`}
-              className="btn-ghost !min-h-[32px] !px-2 !py-1 text-xs"
-            >
-              ✉ Email
-            </a>
-          )}
-          {profile.phone && (
-            <a
-              href={`tel:${profile.phone}`}
-              className="btn-ghost !min-h-[32px] !px-2 !py-1 text-xs"
-            >
-              ☎ Call
-            </a>
-          )}
-          {profile.website && (
-            <a
-              href={profile.website}
-              target="_blank"
-              rel="noreferrer"
-              className="btn-ghost !min-h-[32px] !px-2 !py-1 text-xs"
-            >
-              ↗ Site
-            </a>
-          )}
-        </div>
+        <span className="text-koko-teal">View profile →</span>
       </div>
-    </article>
+    </Link>
   );
 }
