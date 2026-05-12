@@ -96,6 +96,9 @@ export default function Layout({ children }) {
             </nav>
           ) : (
             <nav className="flex items-center gap-2">
+              <NavLink to="/impact" className="btn-ghost hidden md:inline-flex">
+                Impact
+              </NavLink>
               <NavLink to="/exporters" className="btn-ghost hidden sm:inline-flex">
                 Exporters
               </NavLink>

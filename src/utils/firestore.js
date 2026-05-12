@@ -199,15 +199,38 @@ export function fetchAggregateCounts({ force = false } = {}) {
   if (_aggregateInflight) return _aggregateInflight;
   _aggregateInflight = (async () => {
     try {
-      const [farms, batches, shipments] = await Promise.all([
+      // Cheap per-collection counts (one billed doc read each).
+      const [farms, batches, shipments, exporters, enrollments] = await Promise.all([
         getCountFromServer(collection(db, COLLECTIONS.farms)),
         getCountFromServer(collection(db, COLLECTIONS.batches)),
-        getCountFromServer(collection(db, COLLECTIONS.exports))
+        getCountFromServer(collection(db, COLLECTIONS.exports)),
+        getCountFromServer(
+          query(collection(db, 'exporterProfiles'), where('public', '==', true))
+        ),
+        getCountFromServer(collection(db, COLLECTIONS.enrollments))
       ]);
+      // kg + shippedKg come from the server-maintained aggregates doc
+      // (written by Cloud Functions). Returns null if not deployed yet.
+      let kg = null;
+      let shippedKg = null;
+      try {
+        const aggSnap = await getDoc(doc(db, 'aggregates', 'global'));
+        if (aggSnap.exists()) {
+          const a = aggSnap.data();
+          kg = Number(a.kg) || 0;
+          shippedKg = Number(a.shippedKg) || 0;
+        }
+      } catch {
+        /* aggregates doc missing or unreadable — leave kg null */
+      }
       _aggregateCache = {
         farms: farms.data().count,
         batches: batches.data().count,
-        shipments: shipments.data().count
+        shipments: shipments.data().count,
+        exporters: exporters.data().count,
+        enrollments: enrollments.data().count,
+        kg,
+        shippedKg
       };
       return _aggregateCache;
     } finally {

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchAggregateCounts } from '../utils/firestore.js';
 
+
 function useCountUp(target, durationMs = 900) {
   const [value, setValue] = useState(0);
   const fromRef = useRef(0);
@@ -54,23 +55,30 @@ function LiveStats() {
   ];
 
   return (
-    <dl className="mt-12 grid grid-cols-3 gap-3 sm:gap-6 max-w-2xl mx-auto">
-      {items.map((it) => (
-        <div key={it.label} className="text-center">
-          <dt className="text-[10px] sm:text-xs font-semibold uppercase tracking-widest text-koko-muted">
-            {it.label}
-          </dt>
-          <dd
-            className={`mt-1 font-display text-3xl sm:text-5xl font-semibold text-koko-ink transition-opacity ${
-              ready ? 'opacity-100' : 'opacity-40'
-            }`}
-            aria-live="polite"
-          >
-            {ready ? it.value.toLocaleString() : '—'}
-          </dd>
-        </div>
-      ))}
-    </dl>
+    <div className="mt-12 max-w-2xl mx-auto">
+      <dl className="grid grid-cols-3 gap-3 sm:gap-6">
+        {items.map((it) => (
+          <div key={it.label} className="text-center">
+            <dt className="text-[10px] sm:text-xs font-semibold uppercase tracking-widest text-koko-muted">
+              {it.label}
+            </dt>
+            <dd
+              className={`mt-1 font-display text-3xl sm:text-5xl font-semibold text-koko-ink transition-opacity ${
+                ready ? 'opacity-100' : 'opacity-40'
+              }`}
+              aria-live="polite"
+            >
+              {ready ? it.value.toLocaleString() : '—'}
+            </dd>
+          </div>
+        ))}
+      </dl>
+      <p className="mt-4 text-center text-sm">
+        <Link to="/impact" className="text-koko-teal hover:underline">
+          See full pilot impact →
+        </Link>
+      </p>
+    </div>
   );
 }
 

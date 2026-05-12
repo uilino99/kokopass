@@ -14,6 +14,7 @@ import Exporters from './pages/Exporters.jsx';
 import ExporterPublic from './pages/ExporterPublic.jsx';
 import FarmerPublic from './pages/FarmerPublic.jsx';
 import AdminSeed from './pages/AdminSeed.jsx';
+import Impact from './pages/Impact.jsx';
 import ShipmentNew from './pages/ShipmentNew.jsx';
 import ShipmentView from './pages/ShipmentView.jsx';
 import BuyerDashboard from './pages/BuyerDashboard.jsx';
@@ -35,6 +36,7 @@ export default function App() {
         <Route path="/verify/:id" element={<Verify />} />
         <Route path="/exporters" element={<Exporters />} />
         <Route path="/exporters/:id" element={<ExporterPublic />} />
+        <Route path="/impact" element={<Impact />} />
         <Route path="/farmers/:uid" element={<FarmerPublic />} />
 
         {/* Admin tooling */}
