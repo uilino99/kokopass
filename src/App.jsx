@@ -8,6 +8,7 @@ import Dashboard from './pages/Dashboard.jsx';
 import FarmProfile from './pages/FarmProfile.jsx';
 import BatchNew from './pages/BatchNew.jsx';
 import BatchView from './pages/BatchView.jsx';
+import BatchEdit from './pages/BatchEdit.jsx';
 import BatchPrint from './pages/BatchPrint.jsx';
 import ExporterDashboard from './pages/ExporterDashboard.jsx';
 import ExporterProfile from './pages/ExporterProfile.jsx';
@@ -102,6 +103,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <BatchView />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/batches/:id/edit"
+          element={
+            <ProtectedRoute>
+              <BatchEdit />
             </ProtectedRoute>
           }
         />

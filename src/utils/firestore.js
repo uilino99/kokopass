@@ -1,6 +1,7 @@
 import {
   addDoc,
   collection,
+  deleteDoc,
   doc,
   getCountFromServer,
   getDoc,
@@ -73,6 +74,8 @@ export const updateUser = (uid, data) =>
 
 export const updateBatch = (id, data) =>
   updateDoc(doc(db, COLLECTIONS.batches, id), data);
+
+export const deleteBatch = (id) => deleteDoc(doc(db, COLLECTIONS.batches, id));
 
 export const subscribeBatchesByOwner = (ownerUid, cb) => {
   const q = query(

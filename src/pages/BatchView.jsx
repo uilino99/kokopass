@@ -2,11 +2,13 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { QRCodeCanvas } from 'qrcode.react';
 import { subscribeBatch } from '../utils/firestore.js';
+import { useAuth } from '../hooks/useAuth.js';
 import { useToast } from '../components/Toast.jsx';
 import { FullPageSpinner } from '../components/Spinner.jsx';
 
 export default function BatchView() {
   const { id } = useParams();
+  const { user } = useAuth();
   const toast = useToast();
   const [batch, setBatch] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -121,6 +123,11 @@ export default function BatchView() {
         <button onClick={downloadPng} className="btn-accent">⬇ Download PNG</button>
         <button onClick={() => window.print()} className="btn-secondary">🖨 Print label</button>
         <button onClick={copyLink} className="btn-secondary">⧉ Copy link</button>
+        {user?.uid === batch.ownerUid && (
+          <Link to={`/batches/${batch.id}/edit`} className="btn-secondary">
+            ✎ Edit
+          </Link>
+        )}
         <Link to="/batches/new" className="btn-secondary">+ Record another</Link>
       </div>
     </div>
