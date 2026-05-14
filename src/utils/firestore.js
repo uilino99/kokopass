@@ -380,6 +380,14 @@ export const createExport = async (data) => {
   return ref.id;
 };
 
+export const updateExport = (id, data) =>
+  updateDoc(doc(db, COLLECTIONS.exports, id), {
+    ...data,
+    updatedAt: serverTimestamp()
+  });
+
+export const deleteExport = (id) => deleteDoc(doc(db, COLLECTIONS.exports, id));
+
 export const getExport = async (id) => {
   const snap = await getDoc(doc(db, COLLECTIONS.exports, id));
   return snap.exists() ? { id: snap.id, ...snap.data() } : null;

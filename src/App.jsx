@@ -21,6 +21,7 @@ import ForgotPassword from './pages/ForgotPassword.jsx';
 import Impact from './pages/Impact.jsx';
 import ShipmentNew from './pages/ShipmentNew.jsx';
 import ShipmentView from './pages/ShipmentView.jsx';
+import ShipmentEdit from './pages/ShipmentEdit.jsx';
 import BuyerDashboard from './pages/BuyerDashboard.jsx';
 import BuyerScan from './pages/BuyerScan.jsx';
 import EnrollerDashboard from './pages/EnrollerDashboard.jsx';
@@ -137,6 +138,14 @@ export default function App() {
           element={
             <ProtectedRoute role="exporter">
               <ShipmentView />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/exporter/shipments/:id/edit"
+          element={
+            <ProtectedRoute role="exporter">
+              <ShipmentEdit />
             </ProtectedRoute>
           }
         />

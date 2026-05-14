@@ -2,11 +2,13 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { QRCodeCanvas } from 'qrcode.react';
 import { getBatch, subscribeExport } from '../utils/firestore.js';
+import { useAuth } from '../hooks/useAuth.js';
 import { useToast } from '../components/Toast.jsx';
 import { FullPageSpinner } from '../components/Spinner.jsx';
 
 export default function ShipmentView() {
   const { id } = useParams();
+  const { user } = useAuth();
   const toast = useToast();
   const qrWrap = useRef(null);
 
@@ -160,6 +162,11 @@ export default function ShipmentView() {
         <button onClick={downloadPng} className="btn-accent">⬇ Download QR PNG</button>
         <button onClick={() => window.print()} className="btn-secondary">🖨 Print manifest</button>
         <button onClick={copyLink} className="btn-secondary">⧉ Copy verify link</button>
+        {user?.uid === shipment.ownerUid && (
+          <Link to={`/exporter/shipments/${shipment.id}/edit`} className="btn-secondary">
+            ✎ Edit
+          </Link>
+        )}
         <Link to="/exporter/shipments/new" className="btn-secondary">+ New shipment</Link>
       </div>
     </div>
