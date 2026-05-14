@@ -115,32 +115,57 @@ export default function EnrollerDashboard() {
             {rows.slice(0, 50).map((r, i) => (
               <li
                 key={r.id}
-                className="card-hover animate-slide-up"
+                className="animate-slide-up"
                 style={{ animationDelay: `${Math.min(i * 30, 300)}ms` }}
               >
-                <div className="flex items-center justify-between">
-                  <span className={r.claimed ? 'badge-success' : 'badge-teal'}>
-                    {r.claimed ? 'Claimed' : 'Pre-enrolled'}
-                  </span>
-                  <span className="font-mono text-2xs uppercase tracking-widest text-koko-faint">
-                    {r.claimCode}
-                  </span>
-                </div>
-                <h3 className="mt-3 font-display text-2xl text-koko-ink">{r.fullName}</h3>
-                <p className="mt-1 text-sm text-koko-body">
-                  {[r.village, r.district].filter(Boolean).join(' · ') || '—'}
-                </p>
-                <div className="divider !my-4" />
-                <div className="flex items-center justify-between text-xs text-koko-muted">
-                  <span>{r.phone || 'no phone'}</span>
-                  <span className="text-koko-teal">{r.crop || 'Cacao'}</span>
-                </div>
+                <RosterTile record={r} />
               </li>
             ))}
           </ul>
         )}
       </section>
     </div>
+  );
+}
+
+function RosterTile({ record: r }) {
+  const inner = (
+    <>
+      <div className="flex items-center justify-between">
+        <span className={r.claimed ? 'badge-success' : 'badge-teal'}>
+          {r.claimed ? 'Claimed' : 'Pre-enrolled'}
+        </span>
+        <span className="font-mono text-2xs uppercase tracking-widest text-koko-faint">
+          {r.claimCode}
+        </span>
+      </div>
+      <h3 className="mt-3 font-display text-2xl text-koko-ink">{r.fullName}</h3>
+      <p className="mt-1 text-sm text-koko-body">
+        {[r.village, r.district].filter(Boolean).join(' · ') || '—'}
+      </p>
+      <div className="divider !my-4" />
+      <div className="flex items-center justify-between text-xs text-koko-muted">
+        <span>{r.phone || 'no phone'}</span>
+        {r.claimed ? (
+          <span className="text-koko-success">Claimed by farmer</span>
+        ) : (
+          <span className="text-koko-teal">Edit →</span>
+        )}
+      </div>
+    </>
+  );
+
+  if (r.claimed) {
+    return <div className="card opacity-80">{inner}</div>;
+  }
+  return (
+    <Link
+      to={`/enroll/${r.id}/edit`}
+      className="card-hover block"
+      aria-label={`Edit ${r.fullName}`}
+    >
+      {inner}
+    </Link>
   );
 }
 

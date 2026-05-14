@@ -472,6 +472,17 @@ const makeClaimCode = () => {
   return s;
 };
 
+export const getEnrollment = async (id) => {
+  const snap = await getDoc(doc(db, COLLECTIONS.enrollments, id));
+  return snap.exists() ? { id: snap.id, ...snap.data() } : null;
+};
+
+export const updateEnrollment = (id, data) =>
+  updateDoc(doc(db, COLLECTIONS.enrollments, id), data);
+
+export const deleteEnrollment = (id) =>
+  deleteDoc(doc(db, COLLECTIONS.enrollments, id));
+
 export const createEnrollment = async (enrollerUid, data) => {
   const ref = await addDoc(collection(db, COLLECTIONS.enrollments), {
     enrollerUid,

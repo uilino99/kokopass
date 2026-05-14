@@ -26,6 +26,7 @@ import BuyerDashboard from './pages/BuyerDashboard.jsx';
 import BuyerScan from './pages/BuyerScan.jsx';
 import EnrollerDashboard from './pages/EnrollerDashboard.jsx';
 import EnrollNew from './pages/EnrollNew.jsx';
+import EnrollEdit from './pages/EnrollEdit.jsx';
 import EnrollBulk from './pages/EnrollBulk.jsx';
 import EnrollPrint from './pages/EnrollPrint.jsx';
 import Verify from './pages/Verify.jsx';
@@ -190,6 +191,14 @@ export default function App() {
           element={
             <ProtectedRoute role="enroller">
               <EnrollNew />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/enroll/:id/edit"
+          element={
+            <ProtectedRoute role="enroller">
+              <EnrollEdit />
             </ProtectedRoute>
           }
         />
