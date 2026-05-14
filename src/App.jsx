@@ -14,6 +14,8 @@ import Exporters from './pages/Exporters.jsx';
 import ExporterPublic from './pages/ExporterPublic.jsx';
 import FarmerPublic from './pages/FarmerPublic.jsx';
 import AdminSeed from './pages/AdminSeed.jsx';
+import AccountSettings from './pages/AccountSettings.jsx';
+import ForgotPassword from './pages/ForgotPassword.jsx';
 import Impact from './pages/Impact.jsx';
 import ShipmentNew from './pages/ShipmentNew.jsx';
 import ShipmentView from './pages/ShipmentView.jsx';
@@ -33,11 +35,22 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/claim/:code" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/verify/:id" element={<Verify />} />
         <Route path="/exporters" element={<Exporters />} />
         <Route path="/exporters/:id" element={<ExporterPublic />} />
         <Route path="/impact" element={<Impact />} />
         <Route path="/farmers/:uid" element={<FarmerPublic />} />
+
+        {/* Account */}
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute>
+              <AccountSettings />
+            </ProtectedRoute>
+          }
+        />
 
         {/* Admin tooling */}
         <Route

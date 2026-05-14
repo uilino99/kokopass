@@ -2,6 +2,7 @@ import { createContext, useEffect, useState } from 'react';
 import {
   createUserWithEmailAndPassword,
   onAuthStateChanged,
+  sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signOut,
   updateProfile as fbUpdateProfile
@@ -74,10 +75,20 @@ export function AuthProvider({ children }) {
 
   const login = (email, password) => signInWithEmailAndPassword(auth, email, password);
   const logout = () => signOut(auth);
+  const resetPassword = (email) => sendPasswordResetEmail(auth, email);
 
   const updateUserProfile = async (updates) => {
     if (!user) return;
     await setDoc(doc(db, COLLECTIONS.users, user.uid), updates, { merge: true });
+    // Keep the auth-side displayName in sync so it shows up in the
+    // Firebase console + future SDKs that read user.displayName.
+    if (typeof updates.fullName === 'string' && updates.fullName.trim()) {
+      try {
+        await fbUpdateProfile(auth.currentUser, { displayName: updates.fullName.trim() });
+      } catch {
+        /* non-fatal */
+      }
+    }
     setProfile((p) => ({ ...(p || {}), ...updates }));
   };
 
@@ -88,6 +99,7 @@ export function AuthProvider({ children }) {
     register,
     login,
     logout,
+    resetPassword,
     updateProfile: updateUserProfile
   };
 

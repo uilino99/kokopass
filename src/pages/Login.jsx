@@ -59,18 +59,28 @@ export default function Login() {
               aria-invalid={!!errors.email}
             />
           </Field>
-          <Field label="Password" id="login-password" error={errors.password}>
-            <input
-              id="login-password"
-              type="password"
-              autoComplete="current-password"
-              required
-              className={`input ${errors.password ? 'input-error' : ''}`}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              aria-invalid={!!errors.password}
-            />
-          </Field>
+          <div>
+            <Field label="Password" id="login-password" error={errors.password}>
+              <input
+                id="login-password"
+                type="password"
+                autoComplete="current-password"
+                required
+                className={`input ${errors.password ? 'input-error' : ''}`}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                aria-invalid={!!errors.password}
+              />
+            </Field>
+            <div className="mt-1 text-right">
+              <Link
+                to="/forgot-password"
+                className="text-xs font-medium text-koko-teal hover:underline"
+              >
+                Forgot password?
+              </Link>
+            </div>
+          </div>
           <button className="btn-accent w-full" disabled={busy}>
             {busy && <Spinner size="sm" />} {busy ? 'Signing in…' : 'Sign in'}
           </button>

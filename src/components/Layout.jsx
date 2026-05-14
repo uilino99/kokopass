@@ -90,6 +90,15 @@ export default function Layout({ children }) {
                   </Link>
                 </>
               )}
+              <NavLink
+                to="/settings"
+                className={({ isActive }) =>
+                  `btn-ghost ${isActive ? 'text-koko-navy' : ''}`
+                }
+                title="Account settings"
+              >
+                Settings
+              </NavLink>
               <button onClick={handleLogout} className="btn-ghost">
                 Sign out
               </button>
