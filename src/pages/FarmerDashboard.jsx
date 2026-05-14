@@ -55,7 +55,8 @@ export default function FarmerDashboard() {
             </p>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <Link to="/batches/print" className="btn-secondary">🖨 Print labels</Link>
           <Link to="/farm" className="btn-secondary">
             {farm ? 'Edit farm' : 'Set up farm'}
           </Link>
