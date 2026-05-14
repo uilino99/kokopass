@@ -205,10 +205,34 @@ export function fetchRegionStats({ force = false, max = 1000 } = {}) {
   if (_regionInflight) return _regionInflight;
   _regionInflight = (async () => {
     try {
-      const q = query(
-        collection(db, COLLECTIONS.farms),
-        limit(max + 1)
-      );
+      // Prefer the Function-maintained map on aggregates/global. Single
+      // doc read; works at any scale.
+      try {
+        const aggSnap = await getDoc(doc(db, 'aggregates', 'global'));
+        if (aggSnap.exists()) {
+          const data = aggSnap.data() || {};
+          const regions = data.regions || {};
+          const names = data.regionNames || {};
+          const rows = Object.entries(regions)
+            .map(([slug, count]) => ({
+              district: names[slug] || slug,
+              farms: Number(count) || 0
+            }))
+            .filter((r) => r.farms > 0)
+            .sort((a, b) => b.farms - a.farms);
+          if (rows.length > 0) {
+            const total = rows.reduce((acc, r) => acc + r.farms, 0);
+            _regionCache = { rows, total, truncated: false, source: 'aggregates' };
+            return _regionCache;
+          }
+        }
+      } catch {
+        /* aggregates doc missing or unreadable — fall through */
+      }
+
+      // Fallback: read all farms client-side (capped). Used until the
+      // Cloud Functions farm triggers have populated aggregates.
+      const q = query(collection(db, COLLECTIONS.farms), limit(max + 1));
       const snap = await getDocs(q);
       const counts = new Map();
       let total = 0;
@@ -221,7 +245,12 @@ export function fetchRegionStats({ force = false, max = 1000 } = {}) {
       const rows = [...counts.entries()]
         .map(([district, farms]) => ({ district, farms }))
         .sort((a, b) => b.farms - a.farms);
-      _regionCache = { rows, total, truncated: total > max };
+      _regionCache = {
+        rows,
+        total,
+        truncated: total > max,
+        source: 'live'
+      };
       return _regionCache;
     } finally {
       _regionInflight = null;

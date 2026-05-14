@@ -15,7 +15,7 @@
 import { initializeApp } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { logger } from 'firebase-functions/v2';
-import { onDocumentCreated } from 'firebase-functions/v2/firestore';
+import { onDocumentCreated, onDocumentUpdated } from 'firebase-functions/v2/firestore';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { onCall, onRequest, HttpsError } from 'firebase-functions/v2/https';
 
@@ -23,6 +23,17 @@ initializeApp();
 const db = getFirestore();
 
 const REGION = 'us-central1';
+
+/** Make a district string safe as a Firestore field name. */
+const slugifyDistrict = (raw) =>
+  String(raw || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '') || 'unknown';
+
+/** Pick the district label from a farm doc, falling back to village. */
+const districtOf = (farm) =>
+  (farm?.district || farm?.village || 'Unknown').toString().trim() || 'Unknown';
 
 // ---------- 1. Firestore trigger: bump aggregates when a batch is created ----------
 
@@ -58,6 +69,64 @@ export const onShipmentCreated = onDocumentCreated(
       { merge: true }
     );
     logger.info('shipment.created', { shipmentId: event.params.shipmentId });
+  }
+);
+
+// New farms bump the global farm counter and the per-region tally. We
+// store both `regions.<slug>` (the count) and `regionNames.<slug>` (the
+// human-readable district name) so the /impact reader can render the
+// pretty label without having to round-trip through farm docs.
+export const onFarmCreated = onDocumentCreated(
+  { document: 'farms/{farmId}', region: REGION },
+  async (event) => {
+    const data = event.data?.data();
+    if (!data) return;
+    const district = districtOf(data);
+    const slug = slugifyDistrict(district);
+    await db.doc('aggregates/global').set(
+      {
+        farms: FieldValue.increment(1),
+        [`regions.${slug}`]: FieldValue.increment(1),
+        [`regionNames.${slug}`]: district,
+        updatedAt: FieldValue.serverTimestamp()
+      },
+      { merge: true }
+    );
+    logger.info('farm.created', { farmId: event.params.farmId, slug });
+  }
+);
+
+// Farm edits can change the district. Move the count from the old
+// region to the new region in a single document write.
+export const onFarmUpdated = onDocumentUpdated(
+  { document: 'farms/{farmId}', region: REGION },
+  async (event) => {
+    const before = event.data?.before?.data();
+    const after = event.data?.after?.data();
+    if (!before || !after) return;
+
+    const beforeDistrict = districtOf(before);
+    const afterDistrict = districtOf(after);
+    if (beforeDistrict === afterDistrict) return;
+
+    const beforeSlug = slugifyDistrict(beforeDistrict);
+    const afterSlug = slugifyDistrict(afterDistrict);
+    if (beforeSlug === afterSlug) return;
+
+    await db.doc('aggregates/global').set(
+      {
+        [`regions.${beforeSlug}`]: FieldValue.increment(-1),
+        [`regions.${afterSlug}`]: FieldValue.increment(1),
+        [`regionNames.${afterSlug}`]: afterDistrict,
+        updatedAt: FieldValue.serverTimestamp()
+      },
+      { merge: true }
+    );
+    logger.info('farm.regionMoved', {
+      farmId: event.params.farmId,
+      from: beforeSlug,
+      to: afterSlug
+    });
   }
 );
 

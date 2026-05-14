@@ -8,6 +8,8 @@ Server-side foundation for KokoPass: Firestore triggers, scheduled jobs, HTTPS w
 |---|---|---|
 | `onBatchCreated` | Firestore trigger | Bumps `aggregates/global` when a farmer records a batch. |
 | `onShipmentCreated` | Firestore trigger | Bumps `aggregates/global` when an exporter ships. |
+| `onFarmCreated` | Firestore trigger | Bumps `aggregates/global.farms` and `regions.<slug>` for the per-region breakdown on `/impact`. |
+| `onFarmUpdated` | Firestore trigger | Moves the count between `regions.<slug>` when a farm's district changes. |
 | `dailyAggregates` | Scheduled (02:00 Pacific/Apia) | Stub for nightly rollups, digest emails, etc. |
 | `stripeWebhook` | HTTPS POST | Stub for `$4.55/bag` invoice + payment hooks. Wire to Stripe once keys are loaded. |
 | `grantAdmin` | Callable | Stub. Currently refuses; admin is set manually in the Firebase console. |
@@ -61,7 +63,28 @@ The function declares `secrets: ['STRIPE_WEBHOOK_SECRET']` so it's injected as `
 
 ## Schema written by triggers
 
-- `aggregates/global` — `{ batches, kg, shipments, shippedKg, updatedAt }`. Public-read, client-write blocked. Use this to power the Landing counters in production (replacing the per-collection `getCountFromServer` reads we use today).
+`aggregates/global` is the canonical server-maintained doc. Public-read, client-write blocked. Shape:
+
+```jsonc
+{
+  "batches": 0,            // bumped by onBatchCreated
+  "kg": 0,                 // bumped by onBatchCreated (sum of weightKg)
+  "shipments": 0,          // bumped by onShipmentCreated
+  "shippedKg": 0,          // bumped by onShipmentCreated (sum of totalKg)
+  "farms": 0,              // bumped by onFarmCreated
+  "regions": {             // bumped by onFarmCreated / onFarmUpdated
+    "aleipata": 87,        //   key = slugify(district)
+    "savaii": 62
+  },
+  "regionNames": {         // pretty labels paired with the slug keys
+    "aleipata": "Aleipata",
+    "savaii": "Savai'i"
+  },
+  "updatedAt": "<server ts>"
+}
+```
+
+The Landing counters and `/impact` page already prefer `aggregates/global` when present (kg, shippedKg, regions) and fall back to per-collection `getCountFromServer` / live farm reads otherwise. After your first `firebase deploy --only functions`, those reads silently switch to the cheaper aggregate path.
 
 ## Adding a new function
 
