@@ -1,8 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { fetchAggregateCounts, fetchRegionStats } from '../utils/firestore.js';
+import {
+  fetchAggregateCounts,
+  fetchFarmLocations,
+  fetchRegionStats
+} from '../utils/firestore.js';
 import Seo from '../components/Seo.jsx';
 import { Skeleton } from '../components/Skeleton.jsx';
+import FarmMap from '../components/FarmMap.jsx';
 
 function useCountUp(target, durationMs = 1100) {
   const [value, setValue] = useState(0);
@@ -32,6 +37,7 @@ function useCountUp(target, durationMs = 1100) {
 export default function Impact() {
   const [counts, setCounts] = useState(null);
   const [regions, setRegions] = useState(null);
+  const [pins, setPins] = useState(null);
 
   useEffect(() => {
     let active = true;
@@ -57,6 +63,13 @@ export default function Impact() {
       })
       .catch(() => {
         if (active) setRegions({ rows: [], total: 0, truncated: false });
+      });
+    fetchFarmLocations()
+      .then((p) => {
+        if (active) setPins(p);
+      })
+      .catch(() => {
+        if (active) setPins({ pins: [], truncated: false });
       });
     return () => {
       active = false;
@@ -141,6 +154,44 @@ export default function Impact() {
               : 'Total verified cacao across the platform.'
           }
         />
+      </section>
+
+      {/* Map */}
+      <section className="card-elevated animate-slide-up">
+        <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="eyebrow">Live geography</p>
+            <h2 className="mt-1 font-display text-2xl text-koko-ink sm:text-3xl">
+              Farms across Samoa
+            </h2>
+            <p className="mt-1 text-sm text-koko-muted">
+              Each pin is a verified KokoPass farm. Tap a pin to view the farmer's profile.
+            </p>
+          </div>
+          {pins && (
+            <span className="text-sm text-koko-muted">
+              {pins.pins.length} pin{pins.pins.length === 1 ? '' : 's'}
+            </span>
+          )}
+        </div>
+        {!pins ? (
+          <Skeleton className="h-[380px] w-full rounded-2xl" />
+        ) : pins.pins.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-koko-border bg-koko-bg/60 p-8 text-center text-sm text-koko-muted">
+            No farm pins yet. As farmers complete their profile and drop a location, they'll
+            appear on the map.
+          </div>
+        ) : (
+          <>
+            <FarmMap pins={pins.pins} height={420} />
+            {pins.truncated && (
+              <p className="helper mt-3">
+                Showing the first 500 farms. The full map will switch to a server-maintained
+                aggregate as the pilot grows.
+              </p>
+            )}
+          </>
+        )}
       </section>
 
       {/* Per-region breakdown */}

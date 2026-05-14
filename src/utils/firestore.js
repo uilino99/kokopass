@@ -189,6 +189,54 @@ export const subscribeInquiriesForTarget = (targetUid, cb) => {
 export const updateInquiry = (id, updates) =>
   setDoc(doc(db, 'inquiries', id), updates, { merge: true });
 
+// ---------- Farm locations (Impact map) ----------
+
+let _locationsCache = null;
+let _locationsInflight = null;
+
+/**
+ * Fetch farm pins for the /impact map. One billed read per farm doc;
+ * memoised at module scope so a remount in the same session is free.
+ * Capped at `max` to bound cost during pilot growth.
+ */
+export function fetchFarmLocations({ force = false, max = 500 } = {}) {
+  if (!force && _locationsCache) return Promise.resolve(_locationsCache);
+  if (_locationsInflight) return _locationsInflight;
+  _locationsInflight = (async () => {
+    try {
+      const q = query(collection(db, COLLECTIONS.farms), limit(max + 1));
+      const snap = await getDocs(q);
+      const pins = [];
+      snap.forEach((d) => {
+        const data = d.data();
+        const loc = data.location;
+        if (
+          loc &&
+          Number.isFinite(Number(loc.lat)) &&
+          Number.isFinite(Number(loc.lng))
+        ) {
+          pins.push({
+            id: d.id,
+            lat: Number(loc.lat),
+            lng: Number(loc.lng),
+            farmName: data.farmName || '',
+            village: data.village || '',
+            district: data.district || ''
+          });
+        }
+      });
+      _locationsCache = {
+        pins: pins.slice(0, max),
+        truncated: pins.length > max
+      };
+      return _locationsCache;
+    } finally {
+      _locationsInflight = null;
+    }
+  })();
+  return _locationsInflight;
+}
+
 // ---------- Region breakdown (Impact) ----------
 
 let _regionCache = null;
