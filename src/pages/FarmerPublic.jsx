@@ -6,6 +6,7 @@ import {
   listBatchesByOwner
 } from '../utils/firestore.js';
 import { FullPageSpinner } from '../components/Spinner.jsx';
+import BoundaryPicker from '../components/BoundaryPicker.jsx';
 import Seo from '../components/Seo.jsx';
 
 export default function FarmerPublic() {
@@ -162,6 +163,15 @@ export default function FarmerPublic() {
             <blockquote className="mt-6 border-l-2 border-koko-teal pl-4 font-display text-lg italic text-koko-ink sm:text-xl">
               “{farm.story}”
             </blockquote>
+          )}
+
+          {Array.isArray(farm.boundary) && farm.boundary.length >= 3 && (
+            <div className="mt-6">
+              <p className="eyebrow">Farm boundary</p>
+              <div className="mt-2">
+                <BoundaryPicker value={farm.boundary} onChange={() => {}} readOnly height={260} />
+              </div>
+            </div>
           )}
         </div>
       </header>

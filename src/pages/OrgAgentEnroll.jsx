@@ -9,6 +9,7 @@ import {
   subscribeOrgMembers
 } from '../utils/firestore.js';
 import LocationPicker from '../components/LocationPicker.jsx';
+import BoundaryPicker from '../components/BoundaryPicker.jsx';
 import Spinner, { FullPageSpinner } from '../components/Spinner.jsx';
 
 const CROPS = ['Cacao', 'Coconut', 'Banana', 'Taro', 'Other'];
@@ -35,7 +36,8 @@ export default function OrgAgentEnroll() {
     variety: 'Trinitario',
     sizeHectares: '',
     story: '',
-    location: null
+    location: null,
+    boundary: []
   });
   const [errors, setErrors] = useState({});
   const [busy, setBusy] = useState(false);
@@ -128,7 +130,8 @@ export default function OrgAgentEnroll() {
           variety: 'Trinitario',
           sizeHectares: '',
           story: '',
-          location: null
+          location: null,
+          boundary: []
         });
       } else {
         navigate(`/org/${orgId}/agent`);
@@ -265,6 +268,17 @@ export default function OrgAgentEnroll() {
           <LocationPicker
             value={form.location}
             onChange={(loc) => setForm((f) => ({ ...f, location: loc }))}
+          />
+        </Field>
+
+        <Field
+          label="Boundary (optional)"
+          id="boundary"
+          hint="Tap the map to drop corners. Capture this on-site to record the farm perimeter."
+        >
+          <BoundaryPicker
+            value={form.boundary}
+            onChange={(pts) => setForm((f) => ({ ...f, boundary: pts }))}
           />
         </Field>
 

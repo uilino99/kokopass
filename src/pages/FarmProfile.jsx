@@ -5,6 +5,7 @@ import { useToast } from '../components/Toast.jsx';
 import { getFarm, upsertFarm } from '../utils/firestore.js';
 import { validateFarm, hasErrors } from '../utils/validation.js';
 import LocationPicker from '../components/LocationPicker.jsx';
+import BoundaryPicker from '../components/BoundaryPicker.jsx';
 import PhotoUpload from '../components/PhotoUpload.jsx';
 import Spinner, { FullPageSpinner } from '../components/Spinner.jsx';
 
@@ -25,7 +26,8 @@ export default function FarmProfile() {
     sizeHectares: '',
     story: '',
     location: null,
-    heroUrl: null
+    heroUrl: null,
+    boundary: []
   });
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatarUrl || null);
   const [loading, setLoading] = useState(true);
@@ -171,6 +173,17 @@ export default function FarmProfile() {
               setForm((f) => ({ ...f, location: loc }));
               if (errors.location) setErrors((s) => ({ ...s, location: undefined }));
             }}
+          />
+        </Field>
+
+        <Field
+          label="Farm boundary"
+          id="boundary"
+          hint="Optional. Tap the map to drop boundary corners; drag to refine. Shown on your public farmer page."
+        >
+          <BoundaryPicker
+            value={form.boundary}
+            onChange={(pts) => setForm((f) => ({ ...f, boundary: pts }))}
           />
         </Field>
 

@@ -8,6 +8,7 @@ import {
   updateEnrollment
 } from '../utils/firestore.js';
 import LocationPicker from '../components/LocationPicker.jsx';
+import BoundaryPicker from '../components/BoundaryPicker.jsx';
 import Spinner, { FullPageSpinner } from '../components/Spinner.jsx';
 
 const CROPS = ['Cacao', 'Coconut', 'Banana', 'Taro', 'Other'];
@@ -30,7 +31,8 @@ export default function EnrollEdit() {
     variety: 'Trinitario',
     sizeHectares: '',
     story: '',
-    location: null
+    location: null,
+    boundary: []
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(true);
@@ -56,7 +58,8 @@ export default function EnrollEdit() {
             variety: r.variety || 'Trinitario',
             sizeHectares: r.sizeHectares ?? '',
             story: r.story || '',
-            location: r.location || null
+            location: r.location || null,
+            boundary: Array.isArray(r.boundary) ? r.boundary : []
           });
         }
       } finally {
@@ -145,7 +148,8 @@ export default function EnrollEdit() {
         variety: form.variety,
         sizeHectares: Number(form.sizeHectares) || 0,
         story: form.story.trim(),
-        location: form.location || null
+        location: form.location || null,
+        boundary: Array.isArray(form.boundary) ? form.boundary : []
       });
       toast.success('Enrolment updated.');
       navigate('/enroll');
@@ -249,6 +253,13 @@ export default function EnrollEdit() {
           <LocationPicker
             value={form.location}
             onChange={(loc) => setForm((f) => ({ ...f, location: loc }))}
+          />
+        </Field>
+
+        <Field label="Boundary" id="boundary" hint="Optional. Tap the map to drop perimeter corners.">
+          <BoundaryPicker
+            value={form.boundary}
+            onChange={(pts) => setForm((f) => ({ ...f, boundary: pts }))}
           />
         </Field>
 

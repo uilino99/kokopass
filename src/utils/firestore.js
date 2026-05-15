@@ -516,6 +516,7 @@ export const createEnrollment = async (enrollerUid, data) => {
     sizeHectares: Number(data.sizeHectares) || 0,
     story: data.story?.trim() || '',
     location: data.location || null,
+    boundary: Array.isArray(data.boundary) ? data.boundary : [],
     claimCode: makeClaimCode(),
     claimed: false,
     claimedUid: null,
@@ -612,6 +613,7 @@ export const claimEnrollment = async (uid, code, override = {}) => {
       sizeHectares: Number(e.sizeHectares) || 0,
       story: e.story || '',
       location: e.location || null,
+      boundary: Array.isArray(e.boundary) ? e.boundary : [],
       updatedAt: serverTimestamp()
     },
     { merge: true }
