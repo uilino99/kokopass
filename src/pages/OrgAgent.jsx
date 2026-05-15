@@ -185,9 +185,14 @@ export default function OrgAgent() {
               Your recent enrolments
             </h2>
           </div>
-          <Link to={`/org/${orgId}/agent/enroll`} className="btn-accent">
-            + Enrol farmer
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <Link to={`/org/${orgId}/agent/print`} className="btn-secondary">
+              🖨 Print cards
+            </Link>
+            <Link to={`/org/${orgId}/agent/enroll`} className="btn-accent">
+              + Enrol farmer
+            </Link>
+          </div>
         </div>
 
         {loadingEnrol && <div className="card text-koko-muted">Loading…</div>}
