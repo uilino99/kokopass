@@ -18,6 +18,7 @@ import FarmerPublic from './pages/FarmerPublic.jsx';
 import AdminSeed from './pages/AdminSeed.jsx';
 import AccountSettings from './pages/AccountSettings.jsx';
 import ForgotPassword from './pages/ForgotPassword.jsx';
+import Inquiries from './pages/Inquiries.jsx';
 import Impact from './pages/Impact.jsx';
 import ShipmentNew from './pages/ShipmentNew.jsx';
 import ShipmentView from './pages/ShipmentView.jsx';
@@ -155,6 +156,14 @@ export default function App() {
           element={
             <ProtectedRoute role="exporter">
               <ExporterProfile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/exporter/inquiries"
+          element={
+            <ProtectedRoute role="exporter">
+              <Inquiries />
             </ProtectedRoute>
           }
         />
