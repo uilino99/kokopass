@@ -116,9 +116,16 @@ export default function OrgDashboard() {
               )}
             </div>
           </div>
-          {isAdmin && (
-            <Link to={`/org/${orgId}/settings`} className="btn-secondary">Edit</Link>
-          )}
+          <div className="flex flex-wrap gap-2">
+            {(isAdmin || myRole === 'fieldAgent') && (
+              <Link to={`/org/${orgId}/agent`} className="btn-accent">
+                Field workspace
+              </Link>
+            )}
+            {isAdmin && (
+              <Link to={`/org/${orgId}/settings`} className="btn-secondary">Edit</Link>
+            )}
+          </div>
         </div>
         {org.story && (
           <p className="mt-5 text-sm text-koko-body">{org.story}</p>

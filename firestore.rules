@@ -165,24 +165,58 @@ service cloud.firestore {
     // ---------- Pre-enrollments ----------
     match /enrollments/{enrollmentId} {
       allow read: if true;
-      allow create: if isSignedIn()
-        && userRole() == 'enroller'
-        && request.resource.data.enrollerUid == request.auth.uid
-        && request.resource.data.claimed == false;
+      allow create: if isSignedIn() && (
+        // (a) Standalone enroller account (no org).
+        (userRole() == 'enroller'
+          && request.resource.data.enrollerUid == request.auth.uid
+          && request.resource.data.claimed == false)
+        ||
+        // (b) Org-scoped field agent or admin. The org claim is checked
+        // against the orgId being written into the doc, and the actor
+        // must list themselves on both enrollerUid and fieldAgentUid.
+        (request.resource.data.orgId is string
+          && request.resource.data.orgId.size() > 0
+          && request.resource.data.enrollerUid == request.auth.uid
+          && request.resource.data.fieldAgentUid == request.auth.uid
+          && request.resource.data.claimed == false
+          && (orgRole(request.resource.data.orgId) == 'fieldAgent'
+              || orgRole(request.resource.data.orgId) == 'admin'))
+      );
       allow update: if isSignedIn() && (
+        // Standalone enroller editing their own record (still unclaimed).
         (userRole() == 'enroller'
           && resource.data.enrollerUid == request.auth.uid
           && resource.data.claimed == false)
         ||
+        // The field agent who created the org-scoped record can edit it.
+        (resource.data.orgId is string
+          && resource.data.fieldAgentUid == request.auth.uid
+          && resource.data.claimed == false)
+        ||
+        // Org admin of the owning org can edit any unclaimed record.
+        (resource.data.orgId is string
+          && resource.data.claimed == false
+          && orgRole(resource.data.orgId) == 'admin')
+        ||
+        // Claim flow: anyone signed in can flip claimed -> true onto
+        // themselves.
         (resource.data.claimed == false
           && request.resource.data.claimed == true
           && request.resource.data.claimedUid == request.auth.uid)
       ) || isPlatformAdmin();
-      allow delete: if (isSignedIn()
-        && userRole() == 'enroller'
-        && resource.data.enrollerUid == request.auth.uid
-        && resource.data.claimed == false)
-        || isPlatformAdmin();
+      allow delete: if isSignedIn() && (
+        (userRole() == 'enroller'
+          && resource.data.enrollerUid == request.auth.uid
+          && resource.data.claimed == false)
+        ||
+        (resource.data.orgId is string
+          && resource.data.fieldAgentUid == request.auth.uid
+          && resource.data.claimed == false)
+        ||
+        (resource.data.orgId is string
+          && resource.data.claimed == false
+          && orgRole(resource.data.orgId) == 'admin')
+      ) || isPlatformAdmin();
     }
 
     // ---------- Scans ----------

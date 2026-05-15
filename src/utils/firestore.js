@@ -496,8 +496,16 @@ export const deleteEnrollment = (id) =>
   deleteDoc(doc(db, COLLECTIONS.enrollments, id));
 
 export const createEnrollment = async (enrollerUid, data) => {
+  // Field-agent variant: when called from /org/:orgId/agent/enroll the
+  // caller passes orgId + fieldAgentUid so rules accept the write via
+  // the org-scoped path. For standalone enrollers (no org), both fields
+  // are absent and the existing role='enroller' path applies.
+  const orgScoped =
+    typeof data?.orgId === 'string' && data.orgId.length > 0 && data?.fieldAgentUid;
   const ref = await addDoc(collection(db, COLLECTIONS.enrollments), {
     enrollerUid,
+    orgId: orgScoped ? data.orgId : null,
+    fieldAgentUid: orgScoped ? data.fieldAgentUid : null,
     fullName: data.fullName?.trim() || '',
     phone: data.phone?.trim() || '',
     email: data.email?.trim() || '',
@@ -531,6 +539,28 @@ export const subscribeEnrollmentsByEnroller = (enrollerUid, cb) => {
   const q = query(
     collection(db, COLLECTIONS.enrollments),
     where('enrollerUid', '==', enrollerUid),
+    orderBy('createdAt', 'desc')
+  );
+  return onSnapshot(q, (snap) =>
+    cb(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+  );
+};
+
+export const subscribeEnrollmentsByOrg = (orgId, cb) => {
+  const q = query(
+    collection(db, COLLECTIONS.enrollments),
+    where('orgId', '==', orgId),
+    orderBy('createdAt', 'desc')
+  );
+  return onSnapshot(q, (snap) =>
+    cb(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+  );
+};
+
+export const subscribeEnrollmentsByFieldAgent = (fieldAgentUid, cb) => {
+  const q = query(
+    collection(db, COLLECTIONS.enrollments),
+    where('fieldAgentUid', '==', fieldAgentUid),
     orderBy('createdAt', 'desc')
   );
   return onSnapshot(q, (snap) =>
