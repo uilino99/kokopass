@@ -4,15 +4,39 @@ Server-side foundation for KokoPass: Firestore triggers, scheduled jobs, HTTPS w
 
 ## What's in here
 
+**Aggregate triggers**
+
 | Export | Kind | Purpose |
 |---|---|---|
 | `onBatchCreated` | Firestore trigger | Bumps `aggregates/global` when a farmer records a batch. |
 | `onShipmentCreated` | Firestore trigger | Bumps `aggregates/global` when an exporter ships. |
 | `onFarmCreated` | Firestore trigger | Bumps `aggregates/global.farms` and `regions.<slug>` for the per-region breakdown on `/impact`. |
 | `onFarmUpdated` | Firestore trigger | Moves the count between `regions.<slug>` when a farm's district changes. |
-| `dailyAggregates` | Scheduled (02:00 Pacific/Apia) | Stub for nightly rollups, digest emails, etc. |
+
+**Audit-log triggers** (write to `audit_logs/{id}` on every interesting change)
+
+| Export | Watches |
+|---|---|
+| `auditFarmWrite` | `farms/{farmId}` |
+| `auditBatchWrite` | `batches/{batchId}` |
+| `auditShipmentWrite` | `exports/{shipmentId}` |
+| `auditEnrollmentWrite` | `enrollments/{enrollmentId}` |
+| `auditInquiryWrite` | `inquiries/{inquiryId}` |
+| `auditMembershipWrite` | `organizations/{orgId}/members/{memberUid}` |
+
+**Membership & identity**
+
+| Export | Kind | Purpose |
+|---|---|---|
+| `syncMembershipClaims` | Firestore trigger on `organizations/*/members/*` | Mirrors a user's full membership map into `request.auth.token.orgs` so Firestore rules can check `orgRole(orgId)` with zero extra reads. Capped at 20 entries to stay under the 1KB claim budget. |
+
+**Scheduled, HTTPS, callable**
+
+| Export | Kind | Purpose |
+|---|---|---|
+| `dailyAggregates` | Scheduled (02:00 Pacific/Apia) | Stub for nightly rollups, digest emails, log archival. |
 | `stripeWebhook` | HTTPS POST | Stub for `$4.55/bag` invoice + payment hooks. Wire to Stripe once keys are loaded. |
-| `grantAdmin` | Callable | Stub. Currently refuses; admin is set manually in the Firebase console. |
+| `grantAdmin` | Callable | Refuses by design. Platform admin is set manually via the Admin SDK. |
 | `health` | HTTPS GET | Returns `{ok: true}` — useful for uptime monitoring. |
 
 ## Prerequisites
@@ -85,6 +109,46 @@ The function declares `secrets: ['STRIPE_WEBHOOK_SECRET']` so it's injected as `
 ```
 
 The Landing counters and `/impact` page already prefer `aggregates/global` when present (kg, shippedKg, regions) and fall back to per-collection `getCountFromServer` / live farm reads otherwise. After your first `firebase deploy --only functions`, those reads silently switch to the cheaper aggregate path.
+
+## Audit log shape
+
+`audit_logs/{id}` rows are written exclusively by the triggers above. Client writes are blocked. Shape:
+
+```jsonc
+{
+  "actorUid": "<doc owner uid, when known>",
+  "action": "create" | "update" | "delete",
+  "collection": "farms" | "batches" | "exports" | "enrollments" | "inquiries" | "organizations.members",
+  "docId": "<id of the affected doc>",
+  "orgId": "<scoping org id, if any>",   // nullable
+  "diff": ["fieldA", "fieldB"],          // changed field names, capped at 32
+  "at": "<server ts>"
+}
+```
+
+Read access:
+
+- **Platform admin** (`request.auth.token.admin == true`) reads everything.
+- **Org admins** read logs where `orgId` matches an org they admin (via `request.auth.token.orgs[orgId] == 'admin'`).
+- Clients can't write — only the Admin SDK can.
+
+Composite indexes are configured for `(orgId, at desc)`, `(collection, at desc)`, and `(actorUid, at desc)` to back the future admin browse UI.
+
+## Granting platform admin
+
+`grantAdmin` is a deliberate stub — we don't want a callable that sets the `admin` claim, because anyone with the auth token could in principle invoke it. Set the claim manually, once per pilot operator, via the Admin SDK:
+
+```js
+// node script, run once with GOOGLE_APPLICATION_CREDENTIALS set
+import { initializeApp, cert } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
+
+initializeApp();
+await getAuth().setCustomUserClaims('<UID>', { admin: true });
+console.log('done');
+```
+
+Have the user sign out + back in (or call `getIdToken(true)`) to refresh the ID token with the new claim. Firestore rules will then accept `isPlatformAdmin()`.
 
 ## Adding a new function
 

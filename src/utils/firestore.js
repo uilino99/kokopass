@@ -25,12 +25,24 @@ export const COLLECTIONS = {
   exports: 'exports',
   scans: 'scans',
   enrollments: 'enrollments',
+  organizations: 'organizations',
   transactions: 'transactions',
   weatherAlerts: 'weather_alerts',
   buyerPortfolios: 'buyer_portfolios',
   aiPredictions: 'ai_predictions',
   auditLogs: 'audit_logs'
 };
+
+export const ORG_TYPES = [
+  'government',
+  'ngo',
+  'cooperative',
+  'certifier',
+  'buyer',
+  'private'
+];
+
+export const ORG_MEMBER_ROLES = ['admin', 'staff', 'fieldAgent', 'auditor'];
 
 export const getUserProfile = async (uid) => {
   const snap = await getDoc(doc(db, COLLECTIONS.users, uid));
@@ -592,4 +604,104 @@ export const claimEnrollment = async (uid, code, override = {}) => {
 
   await batch.commit();
   return e.id;
+};
+
+// ---------- Organizations & memberships ----------
+//
+// Phase 1 ships the schema, rules and helpers; Phase 2 builds the UI.
+// All helpers below are safe to import without breaking the existing app.
+
+const orgsCol = () => collection(db, COLLECTIONS.organizations);
+const orgDoc = (orgId) => doc(db, COLLECTIONS.organizations, orgId);
+const membersCol = (orgId) => collection(orgDoc(orgId), 'members');
+const memberDoc = (orgId, uid) => doc(orgDoc(orgId), 'members', uid);
+
+export const getOrganization = async (orgId) => {
+  const snap = await getDoc(orgDoc(orgId));
+  return snap.exists() ? { id: snap.id, ...snap.data() } : null;
+};
+
+/**
+ * Create an organization owned by `ownerUid`. The caller (who must be
+ * signed in as ownerUid per rules) follows up by writing a /members/{uid}
+ * doc with role='admin'; bootstrapClause in rules permits exactly that
+ * for the org creator.
+ */
+export const createOrganization = async (ownerUid, data) => {
+  const ref = await addDoc(orgsCol(), {
+    ...data,
+    ownerUid,
+    type: ORG_TYPES.includes(data?.type) ? data.type : 'private',
+    name: String(data?.name || '').trim(),
+    regions: Array.isArray(data?.regions) ? data.regions : [],
+    contact: data?.contact || {},
+    logoUrl: data?.logoUrl || null,
+    story: String(data?.story || '').trim(),
+    public: data?.public ?? true,
+    parentOrgId: data?.parentOrgId || null,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp()
+  });
+  // Self-add as the first admin. The rules' bootstrap clause allows
+  // exactly this for the org owner.
+  await setDoc(memberDoc(ref.id, ownerUid), {
+    uid: ownerUid,
+    role: 'admin',
+    regions: [],
+    invitedBy: ownerUid,
+    joinedAt: serverTimestamp()
+  });
+  return ref.id;
+};
+
+export const updateOrganization = (orgId, data) =>
+  setDoc(
+    orgDoc(orgId),
+    { ...data, updatedAt: serverTimestamp() },
+    { merge: true }
+  );
+
+export const listPublicOrganizations = async (type) => {
+  const constraints = [where('public', '==', true)];
+  if (type) constraints.push(where('type', '==', type));
+  const q = query(orgsCol(), ...constraints);
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+};
+
+export const subscribeOrgMembers = (orgId, cb) =>
+  onSnapshot(membersCol(orgId), (snap) =>
+    cb(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+  );
+
+export const upsertOrgMember = (orgId, uid, data) =>
+  setDoc(
+    memberDoc(orgId, uid),
+    {
+      uid,
+      role: ORG_MEMBER_ROLES.includes(data?.role) ? data.role : 'staff',
+      regions: Array.isArray(data?.regions) ? data.regions : [],
+      invitedBy: data?.invitedBy || null,
+      joinedAt: data?.joinedAt || serverTimestamp()
+    },
+    { merge: true }
+  );
+
+export const removeOrgMember = (orgId, uid) =>
+  deleteDoc(memberDoc(orgId, uid));
+
+/**
+ * Read the signed-in user's org memberships from the ID-token claims.
+ * Returns `{ orgId: role }` or `{}` if not signed in or no claims yet.
+ * Maintained by the syncMembershipClaims Cloud Function.
+ */
+export const orgsFromAuthClaims = async (auth) => {
+  const user = auth?.currentUser;
+  if (!user) return {};
+  try {
+    const result = await user.getIdTokenResult();
+    return result?.claims?.orgs || {};
+  } catch {
+    return {};
+  }
 };

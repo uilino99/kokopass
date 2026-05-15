@@ -12,9 +12,30 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
     }
 
-    // User profile docs.
+    // ---------- Platform & organization helpers ----------
+    // Platform admin = KokoPass internal team. Set via Cloud Function /
+    // Admin SDK only. Never settable by the client.
+    function isPlatformAdmin() {
+      return isSignedIn() && request.auth.token.admin == true;
+    }
+    // Custom claims mirror organization memberships:
+    //   request.auth.token.orgs = { '<orgId>': '<role>' }
+    // Maintained by the syncMembershipClaims Cloud Function.
+    function orgRole(orgId) {
+      return isSignedIn() && (orgId in request.auth.token.get('orgs', {}))
+        ? request.auth.token.orgs[orgId]
+        : null;
+    }
+    function isOrgMember(orgId) {
+      return orgRole(orgId) != null;
+    }
+    function isOrgAdmin(orgId) {
+      return orgRole(orgId) == 'admin';
+    }
+
+    // ---------- Users ----------
     match /users/{userId} {
-      allow read: if isOwner(userId);
+      allow read: if isOwner(userId) || isPlatformAdmin();
       allow create: if isOwner(userId)
         && request.resource.data.uid == userId
         && request.resource.data.role in ['farmer', 'exporter', 'buyer', 'enroller'];
@@ -23,54 +44,55 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // Farm docs are keyed by farmer UID.
+    // ---------- Farms ----------
     match /farms/{farmId} {
-      // Public read — farm metadata is already snapshot onto batches and
-      // surfaced on the public /verify page; exposing the canonical doc
-      // doesn't reveal anything new and lets the marketing page show
-      // aggregate counts without requiring auth.
       allow read: if true;
-      allow create, update: if isOwner(farmId)
-        && request.resource.data.ownerUid == request.auth.uid;
-      allow delete: if false;
+      allow create, update: if (isOwner(farmId)
+        && request.resource.data.ownerUid == request.auth.uid)
+        || isPlatformAdmin();
+      allow delete: if isPlatformAdmin();
     }
 
-    // Batches: owner can write, anyone can read for QR verification.
+    // ---------- Batches ----------
     match /batches/{batchId} {
       allow read: if true;
       allow create: if isSignedIn()
         && request.resource.data.ownerUid == request.auth.uid;
-      allow update: if isSignedIn()
-        && resource.data.ownerUid == request.auth.uid;
-      allow delete: if isSignedIn()
-        && resource.data.ownerUid == request.auth.uid;
+      allow update: if (isSignedIn()
+        && resource.data.ownerUid == request.auth.uid)
+        || isPlatformAdmin();
+      allow delete: if (isSignedIn()
+        && resource.data.ownerUid == request.auth.uid)
+        || isPlatformAdmin();
     }
 
-    // Exports owned by exporter accounts (used by exporter flow later).
+    // ---------- Exports (shipments) ----------
     match /exports/{exportId} {
       allow read: if true;
       allow create: if isSignedIn()
         && userRole() == 'exporter'
         && request.resource.data.ownerUid == request.auth.uid;
-      allow update, delete: if isSignedIn()
-        && resource.data.ownerUid == request.auth.uid;
+      allow update, delete: if (isSignedIn()
+        && resource.data.ownerUid == request.auth.uid)
+        || isPlatformAdmin();
     }
 
-    // Public exporter profiles (the /exporters directory).
+    // ---------- Public exporter profiles ----------
     match /exporterProfiles/{uid} {
       allow read: if true;
-      allow create, update: if isOwner(uid)
+      allow create, update: if (isOwner(uid)
         && userRole() == 'exporter'
-        && request.resource.data.ownerUid == request.auth.uid;
-      allow delete: if false;
+        && request.resource.data.ownerUid == request.auth.uid)
+        || isPlatformAdmin();
+      allow delete: if isPlatformAdmin();
     }
 
-    // Inquiries — lead-capture form on public exporter pages. Anyone
-    // (signed in or not) can submit; only the target exporter can read
-    // and update their inbox.
+    // ---------- Inquiries ----------
     match /inquiries/{id} {
-      allow read: if isSignedIn()
-        && resource.data.targetUid == request.auth.uid;
+      // Target exporter sees their inbox; platform admin sees all for
+      // fraud monitoring.
+      allow read: if isPlatformAdmin()
+        || (isSignedIn() && resource.data.targetUid == request.auth.uid);
       allow create: if
         request.resource.data.targetUid is string
         && request.resource.data.targetUid.size() > 0
@@ -80,104 +102,153 @@ service cloud.firestore {
         && request.resource.data.message.size() > 0
         && request.resource.data.message.size() < 2000
         && request.resource.data.status == 'new';
-      allow update: if isSignedIn()
+      allow update: if (isSignedIn()
         && resource.data.targetUid == request.auth.uid
-        && request.resource.data.targetUid == resource.data.targetUid;
-      allow delete: if false;
+        && request.resource.data.targetUid == resource.data.targetUid)
+        || isPlatformAdmin();
+      allow delete: if isPlatformAdmin();
     }
 
-    // Transactions: payments / sales between farmers and exporters.
+    // ---------- Transactions ----------
     match /transactions/{txId} {
-      allow read: if isSignedIn() && (
+      allow read: if isPlatformAdmin() || (isSignedIn() && (
         resource.data.farmerUid == request.auth.uid ||
         resource.data.exporterUid == request.auth.uid
-      );
+      ));
       allow create: if isSignedIn()
         && userRole() == 'exporter'
         && request.resource.data.exporterUid == request.auth.uid;
-      allow update: if isSignedIn()
-        && resource.data.exporterUid == request.auth.uid;
+      allow update: if (isSignedIn()
+        && resource.data.exporterUid == request.auth.uid)
+        || isPlatformAdmin();
       allow delete: if false;
     }
 
-    // Weather alerts: server-written, broadly readable.
+    // ---------- Weather alerts ----------
     match /weather_alerts/{alertId} {
       allow read: if true;
-      allow write: if false; // written by Cloud Functions / admin SDK
+      allow write: if false;
     }
 
-    // Buyer portfolios: each buyer owns their dashboard config doc.
+    // ---------- Buyer portfolios ----------
     match /buyer_portfolios/{buyerId} {
-      allow read: if isOwner(buyerId);
+      allow read: if isOwner(buyerId) || isPlatformAdmin();
       allow create, update: if isOwner(buyerId)
         && userRole() == 'buyer'
         && request.resource.data.ownerUid == request.auth.uid;
       allow delete: if false;
     }
 
-    // AI predictions: server-written, owner-readable.
+    // ---------- AI predictions ----------
     match /ai_predictions/{predId} {
-      allow read: if isSignedIn()
-        && resource.data.ownerUid == request.auth.uid;
-      allow write: if false; // written by Cloud Functions / admin SDK
+      allow read: if isPlatformAdmin()
+        || (isSignedIn() && resource.data.ownerUid == request.auth.uid);
+      allow write: if false;
     }
 
-    // Server-maintained global aggregates (written by Cloud Functions only).
-    // Public read so the Landing page could prefer this over per-collection
-    // counts once the functions are deployed.
+    // ---------- Aggregates ----------
     match /aggregates/{docId} {
       allow read: if true;
-      allow write: if false; // admin SDK bypasses rules
+      allow write: if false;
     }
 
-    // Audit logs: append-only, never client-readable.
+    // ---------- Audit logs ----------
+    // Written exclusively by Cloud Functions (admin SDK bypasses rules).
+    // Readable by the platform admin, and by org admins when the log is
+    // scoped to their org.
     match /audit_logs/{logId} {
-      allow read: if false;
-      allow create: if isSignedIn()
-        && request.resource.data.actorUid == request.auth.uid;
-      allow update, delete: if false;
+      allow read: if isPlatformAdmin()
+        || (resource.data.orgId != null && isOrgAdmin(resource.data.orgId));
+      allow write: if false;
     }
 
-    // Pre-enrollments: village rep / NGO field officer (role='enroller')
-    // bulk-adds farmer records before those farmers have Firebase Auth
-    // accounts. Each pre-enrollment owns a `claimCode` farmers can later
-    // redeem to claim the data into their own /farms/{uid} doc.
+    // ---------- Pre-enrollments ----------
     match /enrollments/{enrollmentId} {
-      // Public read OK (low-risk metadata, supports lookup by code).
       allow read: if true;
       allow create: if isSignedIn()
         && userRole() == 'enroller'
         && request.resource.data.enrollerUid == request.auth.uid
         && request.resource.data.claimed == false;
       allow update: if isSignedIn() && (
-        // Enroller editing their own record (still unclaimed).
         (userRole() == 'enroller'
           && resource.data.enrollerUid == request.auth.uid
           && resource.data.claimed == false)
         ||
-        // Anyone can claim an unclaimed record by setting claimed/claimedUid
-        // to themselves (claim flow).
         (resource.data.claimed == false
           && request.resource.data.claimed == true
           && request.resource.data.claimedUid == request.auth.uid)
-      );
-      allow delete: if isSignedIn()
+      ) || isPlatformAdmin();
+      allow delete: if (isSignedIn()
         && userRole() == 'enroller'
         && resource.data.enrollerUid == request.auth.uid
-        && resource.data.claimed == false;
+        && resource.data.claimed == false)
+        || isPlatformAdmin();
     }
 
-    // Scans: a buyer's traceability portfolio. Deterministic doc IDs of
-    // the form "{ownerUid}_{refId}" make re-scanning the same QR an
-    // idempotent merge that just refreshes scannedAt.
+    // ---------- Scans ----------
     match /scans/{scanId} {
-      allow read: if isSignedIn() && resource.data.ownerUid == request.auth.uid;
+      allow read: if (isSignedIn() && resource.data.ownerUid == request.auth.uid)
+        || isPlatformAdmin();
       allow create: if isSignedIn()
         && request.resource.data.ownerUid == request.auth.uid;
       allow update: if isSignedIn()
         && resource.data.ownerUid == request.auth.uid
         && request.resource.data.ownerUid == request.auth.uid;
-      allow delete: if isSignedIn() && resource.data.ownerUid == request.auth.uid;
+      allow delete: if (isSignedIn() && resource.data.ownerUid == request.auth.uid)
+        || isPlatformAdmin();
+    }
+
+    // ---------- Organizations ----------
+    // Public-read by default (organizations want discoverability); the
+    // owner / org admins / platform admin can write.
+    match /organizations/{orgId} {
+      allow read: if true;
+      allow create: if isSignedIn()
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.type in
+          ['government', 'ngo', 'cooperative', 'certifier', 'buyer', 'private'];
+      allow update: if isOrgAdmin(orgId) || isPlatformAdmin();
+      allow delete: if isPlatformAdmin();
+
+      // Memberships — one doc per user per org, keyed by the user's UID.
+      match /members/{memberUid} {
+        // A member can read their own record; org admins read all
+        // members; platform admin reads everywhere.
+        allow read: if isOwner(memberUid)
+          || isOrgAdmin(orgId)
+          || isPlatformAdmin();
+        // First-member bootstrap: the org creator (ownerUid) can add
+        // themselves as the first admin. Subsequent members can only be
+        // added by an existing org admin or the platform admin.
+        allow create: if isPlatformAdmin()
+          || isOrgAdmin(orgId)
+          || (
+            isOwner(memberUid)
+            && get(/databases/$(database)/documents/organizations/$(orgId)).data.ownerUid == request.auth.uid
+            && request.resource.data.role == 'admin'
+            && request.resource.data.uid == memberUid
+          );
+        allow update: if isOrgAdmin(orgId) || isPlatformAdmin();
+        // A member can remove themselves; admins can remove anyone in
+        // their org; platform admin overrides everything.
+        allow delete: if isOwner(memberUid)
+          || isOrgAdmin(orgId)
+          || isPlatformAdmin();
+      }
+
+      // Territories (geographic assignment areas).
+      match /territories/{territoryId} {
+        allow read: if true;
+        allow create, update, delete: if isOrgAdmin(orgId) || isPlatformAdmin();
+      }
+
+      // Certification / compliance programs.
+      match /programs/{programId} {
+        allow read: if true;
+        allow create, update, delete: if isOrgAdmin(orgId) || isPlatformAdmin();
+      }
     }
   }
 }
