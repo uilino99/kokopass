@@ -131,6 +131,17 @@ export default function Layout({ children }) {
               >
                 Orgs
               </NavLink>
+              {profile?.admin === true && (
+                <NavLink
+                  to="/admin"
+                  className={({ isActive }) =>
+                    `btn-ghost text-koko-error ${isActive ? 'font-semibold' : ''}`
+                  }
+                  title="Platform admin"
+                >
+                  Admin
+                </NavLink>
+              )}
               <NavLink
                 to="/settings"
                 className={({ isActive }) =>

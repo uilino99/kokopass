@@ -16,6 +16,10 @@ import Exporters from './pages/Exporters.jsx';
 import ExporterPublic from './pages/ExporterPublic.jsx';
 import FarmerPublic from './pages/FarmerPublic.jsx';
 import AdminSeed from './pages/AdminSeed.jsx';
+import AdminDashboard from './pages/AdminDashboard.jsx';
+import AdminAudit from './pages/AdminAudit.jsx';
+import AdminUsers from './pages/AdminUsers.jsx';
+import AdminOrgs from './pages/AdminOrgs.jsx';
 import AccountSettings from './pages/AccountSettings.jsx';
 import ForgotPassword from './pages/ForgotPassword.jsx';
 import Inquiries from './pages/Inquiries.jsx';
@@ -141,6 +145,38 @@ export default function App() {
         />
 
         {/* Admin tooling */}
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute>
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/audit"
+          element={
+            <ProtectedRoute>
+              <AdminAudit />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/users"
+          element={
+            <ProtectedRoute>
+              <AdminUsers />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/orgs"
+          element={
+            <ProtectedRoute>
+              <AdminOrgs />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/admin/seed"
           element={

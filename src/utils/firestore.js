@@ -762,3 +762,77 @@ export const orgsFromAuthClaims = async (auth) => {
     return {};
   }
 };
+
+// ---------- Platform admin helpers ----------
+
+/**
+ * Compose an audit_logs query with an optional single filter facet. The
+ * shipped composite indexes back any one of:
+ *   { collection: 'farms' }
+ *   { action: 'delete' }
+ *   { actorUid: '<uid>' }
+ *   { orgId: '<orgId>' }
+ * Combining facets needs a new composite — we deliberately keep it to
+ * one-at-a-time for now.
+ */
+export const fetchAuditLogs = async ({
+  collection: coll = null,
+  action = null,
+  actorUid = null,
+  orgId = null,
+  max = 50
+} = {}) => {
+  const constraints = [];
+  let active = 0;
+  if (coll) { constraints.push(where('collection', '==', coll)); active += 1; }
+  if (action) { constraints.push(where('action', '==', action)); active += 1; }
+  if (actorUid) { constraints.push(where('actorUid', '==', actorUid)); active += 1; }
+  if (orgId) { constraints.push(where('orgId', '==', orgId)); active += 1; }
+  if (active > 1) {
+    throw new Error('Use only one filter facet at a time.');
+  }
+  constraints.push(orderBy('at', 'desc'));
+  constraints.push(limit(max));
+  const q = query(collection(db, COLLECTIONS.auditLogs), ...constraints);
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+};
+
+export const fetchRecentUsers = async (max = 100) => {
+  const q = query(
+    collection(db, COLLECTIONS.users),
+    orderBy('createdAt', 'desc'),
+    limit(max)
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+};
+
+export const fetchAllOrganizations = async (max = 200) => {
+  const q = query(orgsCol(), limit(max));
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+};
+
+/**
+ * Platform-admin stats. Falls back gracefully when individual counts
+ * fail (e.g., when rules deny a non-admin caller invoking this from
+ * dev). All counts use getCountFromServer for a single billed read.
+ */
+export const fetchAdminStats = async () => {
+  const safe = async (q) => {
+    try {
+      return (await getCountFromServer(q)).data().count;
+    } catch {
+      return null;
+    }
+  };
+  const [users, organizations, scans, inquiries, auditLogs] = await Promise.all([
+    safe(collection(db, COLLECTIONS.users)),
+    safe(orgsCol()),
+    safe(collection(db, COLLECTIONS.scans)),
+    safe(collection(db, 'inquiries')),
+    safe(collection(db, COLLECTIONS.auditLogs))
+  ]);
+  return { users, organizations, scans, inquiries, auditLogs };
+};
