@@ -20,6 +20,11 @@ import AccountSettings from './pages/AccountSettings.jsx';
 import ForgotPassword from './pages/ForgotPassword.jsx';
 import Inquiries from './pages/Inquiries.jsx';
 import Impact from './pages/Impact.jsx';
+import Orgs from './pages/Orgs.jsx';
+import OrgNew from './pages/OrgNew.jsx';
+import OrgDashboard from './pages/OrgDashboard.jsx';
+import OrgMembers from './pages/OrgMembers.jsx';
+import OrgSettings from './pages/OrgSettings.jsx';
 import ShipmentNew from './pages/ShipmentNew.jsx';
 import ShipmentView from './pages/ShipmentView.jsx';
 import ShipmentEdit from './pages/ShipmentEdit.jsx';
@@ -53,6 +58,48 @@ export default function App() {
           element={
             <ProtectedRoute>
               <AccountSettings />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Organizations */}
+        <Route
+          path="/orgs"
+          element={
+            <ProtectedRoute>
+              <Orgs />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/org/new"
+          element={
+            <ProtectedRoute>
+              <OrgNew />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/org/:orgId"
+          element={
+            <ProtectedRoute>
+              <OrgDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/org/:orgId/members"
+          element={
+            <ProtectedRoute>
+              <OrgMembers />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/org/:orgId/settings"
+          element={
+            <ProtectedRoute>
+              <OrgSettings />
             </ProtectedRoute>
           }
         />

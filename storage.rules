@@ -40,5 +40,17 @@ service firebase.storage {
         && request.auth.uid == uid
         && isImageWithin(5 * 1024 * 1024);
     }
+
+    // Organization logos / assets keyed by the uploading user, since
+    // Storage rules can't cheaply check Firestore org membership.
+    // Multiple admins of the same org each upload under their own UID
+    // space; the org doc stores the resulting download URL.
+    // Path: organizations/{uploaderUid}/{orgId-or-token}/...
+    match /organizations/{uploaderUid}/{file=**} {
+      allow read: if true;
+      allow write: if request.auth != null
+        && request.auth.uid == uploaderUid
+        && isImageWithin(5 * 1024 * 1024);
+    }
   }
 }

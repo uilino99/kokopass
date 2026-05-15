@@ -627,9 +627,8 @@ export const getOrganization = async (orgId) => {
  * doc with role='admin'; bootstrapClause in rules permits exactly that
  * for the org creator.
  */
-export const createOrganization = async (ownerUid, data) => {
+export const createOrganization = async (ownerUid, data, ownerDisplayName = '') => {
   const ref = await addDoc(orgsCol(), {
-    ...data,
     ownerUid,
     type: ORG_TYPES.includes(data?.type) ? data.type : 'private',
     name: String(data?.name || '').trim(),
@@ -648,6 +647,7 @@ export const createOrganization = async (ownerUid, data) => {
     uid: ownerUid,
     role: 'admin',
     regions: [],
+    displayName: String(ownerDisplayName || '').trim(),
     invitedBy: ownerUid,
     joinedAt: serverTimestamp()
   });
@@ -681,6 +681,12 @@ export const upsertOrgMember = (orgId, uid, data) =>
       uid,
       role: ORG_MEMBER_ROLES.includes(data?.role) ? data.role : 'staff',
       regions: Array.isArray(data?.regions) ? data.regions : [],
+      // Denormalised display label. `users/{uid}` is owner-only-read, so
+      // an org admin can't fetch the member's real name — we store a
+      // hint they type in at invite time. Authoritative name still lives
+      // on the user doc; this is a stale-but-good cache for the member
+      // list UI.
+      displayName: data?.displayName ? String(data.displayName).trim() : '',
       invitedBy: data?.invitedBy || null,
       joinedAt: data?.joinedAt || serverTimestamp()
     },

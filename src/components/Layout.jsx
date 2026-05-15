@@ -123,6 +123,15 @@ export default function Layout({ children }) {
                 </>
               )}
               <NavLink
+                to="/orgs"
+                className={({ isActive }) =>
+                  `btn-ghost ${isActive ? 'text-koko-navy' : ''}`
+                }
+                title="Your organizations"
+              >
+                Orgs
+              </NavLink>
+              <NavLink
                 to="/settings"
                 className={({ isActive }) =>
                   `btn-ghost ${isActive ? 'text-koko-navy' : ''}`
