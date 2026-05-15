@@ -1,5 +1,7 @@
+import { useEffect, useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.js';
+import { subscribeInquiriesForTarget } from '../utils/firestore.js';
 import { useToast } from './Toast.jsx';
 import BottomNav from './BottomNav.jsx';
 import InstallPrompt from './InstallPrompt.jsx';
@@ -9,6 +11,19 @@ export default function Layout({ children }) {
   const { user, profile, logout } = useAuth();
   const navigate = useNavigate();
   const toast = useToast();
+  const [unreadInquiries, setUnreadInquiries] = useState(0);
+
+  // Light-weight inquiry-unread counter for the exporter top nav.
+  useEffect(() => {
+    if (!user || profile?.role !== 'exporter') {
+      setUnreadInquiries(0);
+      return;
+    }
+    const unsub = subscribeInquiriesForTarget(user.uid, (rows) => {
+      setUnreadInquiries(rows.filter((r) => (r.status || 'new') === 'new').length);
+    });
+    return unsub;
+  }, [user, profile?.role]);
 
   const handleLogout = async () => {
     try {
@@ -48,6 +63,23 @@ export default function Layout({ children }) {
               {profile?.role === 'exporter' && (
                 <>
                   <NavLink to="/exporter" className={linkClass}>Shipments</NavLink>
+                  <NavLink
+                    to="/exporter/inquiries"
+                    className={({ isActive }) =>
+                      `relative rounded-lg px-3 py-2 text-sm font-medium transition ${
+                        isActive
+                          ? 'text-koko-navy'
+                          : 'text-koko-body hover:text-koko-navy hover:bg-koko-borderSoft'
+                      }`
+                    }
+                  >
+                    Inbox
+                    {unreadInquiries > 0 && (
+                      <span className="ml-1 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-koko-error px-1.5 text-2xs font-semibold text-white">
+                        {unreadInquiries}
+                      </span>
+                    )}
+                  </NavLink>
                   <NavLink to="/exporter/profile" className={linkClass}>Profile</NavLink>
                   <Link
                     to="/exporter/shipments/new"

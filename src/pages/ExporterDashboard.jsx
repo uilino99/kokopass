@@ -99,11 +99,11 @@ export default function ExporterDashboard() {
               )}
             </h2>
           </div>
-          {inquiries.length > 10 && (
-            <Link to="/exporter/inquiries" className="btn-ghost">
-              View all →
-            </Link>
-          )}
+          <Link to="/exporter/inquiries" className="btn-ghost">
+            {inquiries.length > 10
+              ? `View all ${inquiries.length} →`
+              : 'Open inbox →'}
+          </Link>
         </div>
 
         {inqLoading && <SkeletonCard />}
