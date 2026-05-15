@@ -28,6 +28,7 @@ import OrgSettings from './pages/OrgSettings.jsx';
 import OrgAgent from './pages/OrgAgent.jsx';
 import OrgAgentEnroll from './pages/OrgAgentEnroll.jsx';
 import OrgAgentPrint from './pages/OrgAgentPrint.jsx';
+import OrgTerritories from './pages/OrgTerritories.jsx';
 import ShipmentNew from './pages/ShipmentNew.jsx';
 import ShipmentView from './pages/ShipmentView.jsx';
 import ShipmentEdit from './pages/ShipmentEdit.jsx';
@@ -127,6 +128,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <OrgAgentPrint />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/org/:orgId/territories"
+          element={
+            <ProtectedRoute>
+              <OrgTerritories />
             </ProtectedRoute>
           }
         />

@@ -123,6 +123,11 @@ export default function OrgDashboard() {
               </Link>
             )}
             {isAdmin && (
+              <Link to={`/org/${orgId}/territories`} className="btn-secondary">
+                Territories
+              </Link>
+            )}
+            {isAdmin && (
               <Link to={`/org/${orgId}/settings`} className="btn-secondary">Edit</Link>
             )}
           </div>
