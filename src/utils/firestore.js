@@ -547,14 +547,26 @@ export const subscribeEnrollmentsByEnroller = (enrollerUid, cb) => {
   );
 };
 
+// Org / field-agent subscriptions include snapshot metadata so the
+// caller can detect locally-cached / pending-write rows for the sync
+// indicator. Extra metadata-only callbacks fire on cache transitions
+// (e.g. coming back online); this is cheap and the UI re-renders are
+// idempotent.
 export const subscribeEnrollmentsByOrg = (orgId, cb) => {
   const q = query(
     collection(db, COLLECTIONS.enrollments),
     where('orgId', '==', orgId),
     orderBy('createdAt', 'desc')
   );
-  return onSnapshot(q, (snap) =>
-    cb(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+  return onSnapshot(q, { includeMetadataChanges: true }, (snap) =>
+    cb(
+      snap.docs.map((d) => ({
+        id: d.id,
+        ...d.data(),
+        _pendingWrite: d.metadata.hasPendingWrites,
+        _fromCache: d.metadata.fromCache
+      }))
+    )
   );
 };
 
@@ -564,8 +576,15 @@ export const subscribeEnrollmentsByFieldAgent = (fieldAgentUid, cb) => {
     where('fieldAgentUid', '==', fieldAgentUid),
     orderBy('createdAt', 'desc')
   );
-  return onSnapshot(q, (snap) =>
-    cb(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+  return onSnapshot(q, { includeMetadataChanges: true }, (snap) =>
+    cb(
+      snap.docs.map((d) => ({
+        id: d.id,
+        ...d.data(),
+        _pendingWrite: d.metadata.hasPendingWrites,
+        _fromCache: d.metadata.fromCache
+      }))
+    )
   );
 };
 

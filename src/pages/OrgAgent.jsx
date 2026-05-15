@@ -8,6 +8,7 @@ import {
   subscribeEnrollmentsByOrg,
   subscribeOrgMembers
 } from '../utils/firestore.js';
+import SyncBadge from '../components/SyncBadge.jsx';
 import { FullPageSpinner } from '../components/Spinner.jsx';
 
 export default function OrgAgent() {
@@ -60,6 +61,10 @@ export default function OrgAgent() {
   );
   const totalForOrg = enrollments.length;
   const claimedForOrg = enrollments.filter((e) => e.claimed).length;
+  const pendingMine = useMemo(
+    () => myEnrollments.filter((e) => e._pendingWrite).length,
+    [myEnrollments]
+  );
 
   if (missing) {
     return (
@@ -102,10 +107,15 @@ export default function OrgAgent() {
       </div>
 
       <header className="animate-slide-up">
-        <p className="eyebrow">Field workspace</p>
-        <h1 className="mt-2 font-display text-4xl text-koko-ink sm:text-5xl">
-          Talofa, {user?.displayName?.split(' ')[0] || 'agent'}
-        </h1>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="eyebrow">Field workspace</p>
+            <h1 className="mt-2 font-display text-4xl text-koko-ink sm:text-5xl">
+              Talofa, {user?.displayName?.split(' ')[0] || 'agent'}
+            </h1>
+          </div>
+          <SyncBadge pending={pendingMine} />
+        </div>
         <div className="divider-teal mt-4 ml-0" />
         <p className="mt-4 text-sm text-koko-body">
           You're working for <strong>{org.name}</strong>. Anything you enrol here is tagged
@@ -125,12 +135,16 @@ export default function OrgAgent() {
           sub={`${claimedForOrg} claimed across team`}
         />
         <Stat
-          label="Status"
-          value={online ? 'Online' : 'Offline'}
+          label="Pending sync"
+          value={pendingMine}
           sub={
-            online
-              ? 'Writes go out immediately'
-              : 'Records will sync when reconnected'
+            pendingMine === 0
+              ? online
+                ? 'All your writes are on the server.'
+                : 'Offline · new writes will queue here.'
+              : online
+                ? 'Syncing now — leave the tab open.'
+                : 'Offline · they\'ll flush when you reconnect.'
           }
         />
       </div>
