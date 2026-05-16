@@ -4,7 +4,9 @@ import { useAuth } from '../hooks/useAuth.js';
 import { useUserOrgs } from '../hooks/useUserOrgs.js';
 import {
   getOrganization,
-  subscribeOrgMembers
+  subscribeCertsByOrg,
+  subscribeOrgMembers,
+  subscribeOrgPrograms
 } from '../utils/firestore.js';
 import { FullPageSpinner } from '../components/Spinner.jsx';
 
@@ -26,6 +28,8 @@ export default function OrgDashboard() {
   const [members, setMembers] = useState([]);
   const [membersLoading, setMembersLoading] = useState(true);
   const [membersError, setMembersError] = useState(false);
+  const [programs, setPrograms] = useState([]);
+  const [certs, setCerts] = useState([]);
 
   useEffect(() => {
     let active = true;
@@ -63,6 +67,15 @@ export default function OrgDashboard() {
     return () => {
       clearTimeout(t);
       unsub();
+    };
+  }, [orgId]);
+
+  useEffect(() => {
+    const unsubP = subscribeOrgPrograms(orgId, setPrograms);
+    const unsubC = subscribeCertsByOrg(orgId, setCerts);
+    return () => {
+      unsubP();
+      unsubC();
     };
   }, [orgId]);
 
@@ -122,6 +135,16 @@ export default function OrgDashboard() {
                 Field workspace
               </Link>
             )}
+            {(isAdmin || myRole === 'auditor') && (
+              <Link to={`/org/${orgId}/certifications`} className="btn-secondary">
+                Certifications
+              </Link>
+            )}
+            {isAdmin && (
+              <Link to={`/org/${orgId}/programs`} className="btn-secondary">
+                Programs
+              </Link>
+            )}
             {isAdmin && (
               <Link to={`/org/${orgId}/territories`} className="btn-secondary">
                 Territories
@@ -145,7 +168,7 @@ export default function OrgDashboard() {
       </header>
 
       {/* Stats */}
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Stat
           label="Members"
           value={membersLoading ? '—' : members.length}
@@ -158,8 +181,13 @@ export default function OrgDashboard() {
         />
         <Stat
           label="Programs"
-          value="—"
-          sub="Compliance + certification (coming soon)"
+          value={programs.length}
+          sub={`${programs.filter((p) => p.active).length} active`}
+        />
+        <Stat
+          label="Certifications"
+          value={certs.length}
+          sub={`${certs.filter((c) => (c.status || 'verified') === 'verified').length} verified`}
         />
       </div>
 

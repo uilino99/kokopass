@@ -162,6 +162,33 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // ---------- Certifications ----------
+    // Top-level collection so an auditor from a certifier org can write
+    // without needing permissions on the farmer's /farms doc. Public-
+    // read so anyone hitting /farmers/:uid or /verify/:batchId can see
+    // the badges.
+    match /certifications/{certId} {
+      allow read: if true;
+      allow create: if isSignedIn()
+        && request.resource.data.orgId is string
+        && request.resource.data.orgId.size() > 0
+        && request.resource.data.farmUid is string
+        && request.resource.data.farmUid.size() > 0
+        && request.resource.data.programId is string
+        && (
+          orgRole(request.resource.data.orgId) == 'admin' ||
+          orgRole(request.resource.data.orgId) == 'auditor'
+        );
+      allow update: if isSignedIn() && (
+        orgRole(resource.data.orgId) == 'admin' ||
+        orgRole(resource.data.orgId) == 'auditor'
+      );
+      // Only admins can hard-delete; auditors revoke by setting
+      // status='revoked' or expiresAt in the past via update.
+      allow delete: if (isSignedIn() && orgRole(resource.data.orgId) == 'admin')
+        || isPlatformAdmin();
+    }
+
     // ---------- Pre-enrollments ----------
     match /enrollments/{enrollmentId} {
       allow read: if true;

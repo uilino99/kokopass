@@ -3,10 +3,12 @@ import { Link, useParams } from 'react-router-dom';
 import {
   countBatchesByOwner,
   getFarm,
-  listBatchesByOwner
+  listBatchesByOwner,
+  listCertsByFarm
 } from '../utils/firestore.js';
 import { FullPageSpinner } from '../components/Spinner.jsx';
 import BoundaryPicker from '../components/BoundaryPicker.jsx';
+import { CertBadgeRow } from '../components/CertBadge.jsx';
 import Seo from '../components/Seo.jsx';
 
 export default function FarmerPublic() {
@@ -14,6 +16,7 @@ export default function FarmerPublic() {
   const [farm, setFarm] = useState(null);
   const [batches, setBatches] = useState([]);
   const [totalBatches, setTotalBatches] = useState(null);
+  const [certs, setCerts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [missing, setMissing] = useState(false);
 
@@ -29,13 +32,15 @@ export default function FarmerPublic() {
           return;
         }
         setFarm(f);
-        const [recent, total] = await Promise.all([
+        const [recent, total, certRows] = await Promise.all([
           listBatchesByOwner(uid, 12),
-          countBatchesByOwner(uid).catch(() => null)
+          countBatchesByOwner(uid).catch(() => null),
+          listCertsByFarm(uid).catch(() => [])
         ]);
         if (!active) return;
         setBatches(recent);
         if (total != null) setTotalBatches(total);
+        setCerts(certRows.filter((c) => (c.status || 'verified') !== 'revoked'));
       } finally {
         if (active) setLoading(false);
       }
@@ -158,6 +163,15 @@ export default function FarmerPublic() {
               )}
             </div>
           </div>
+
+          {certs.length > 0 && (
+            <div className="mt-6">
+              <p className="eyebrow">Certifications</p>
+              <div className="mt-2">
+                <CertBadgeRow certs={certs} />
+              </div>
+            </div>
+          )}
 
           {farm.story && (
             <blockquote className="mt-6 border-l-2 border-koko-teal pl-4 font-display text-lg italic text-koko-ink sm:text-xl">

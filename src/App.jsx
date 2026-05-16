@@ -33,6 +33,8 @@ import OrgAgent from './pages/OrgAgent.jsx';
 import OrgAgentEnroll from './pages/OrgAgentEnroll.jsx';
 import OrgAgentPrint from './pages/OrgAgentPrint.jsx';
 import OrgTerritories from './pages/OrgTerritories.jsx';
+import OrgPrograms from './pages/OrgPrograms.jsx';
+import OrgCertifications from './pages/OrgCertifications.jsx';
 import ShipmentNew from './pages/ShipmentNew.jsx';
 import ShipmentView from './pages/ShipmentView.jsx';
 import ShipmentEdit from './pages/ShipmentEdit.jsx';
@@ -140,6 +142,22 @@ export default function App() {
           element={
             <ProtectedRoute>
               <OrgTerritories />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/org/:orgId/programs"
+          element={
+            <ProtectedRoute>
+              <OrgPrograms />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/org/:orgId/certifications"
+          element={
+            <ProtectedRoute>
+              <OrgCertifications />
             </ProtectedRoute>
           }
         />

@@ -3,10 +3,12 @@ import { Link, useParams } from 'react-router-dom';
 import {
   getBatch,
   getExport,
+  listCertsByFarm,
   recordScan,
   subscribeBatch
 } from '../utils/firestore.js';
 import { useAuth } from '../hooks/useAuth.js';
+import { CertBadgeRow } from '../components/CertBadge.jsx';
 import { FullPageSpinner } from '../components/Spinner.jsx';
 import Seo from '../components/Seo.jsx';
 
@@ -18,7 +20,27 @@ export default function Verify() {
   const [shipmentBatches, setShipmentBatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saved, setSaved] = useState(false);
+  const [certs, setCerts] = useState([]);
   const recordedRef = useRef(null);
+
+  // Fetch cert badges for the farm once we know the batch's farmId.
+  // For shipments we skip — the manifest may span many farms.
+  useEffect(() => {
+    if (kind !== 'batch' || !data?.farmId) {
+      setCerts([]);
+      return;
+    }
+    let active = true;
+    listCertsByFarm(data.farmId)
+      .then((rows) => {
+        if (!active) return;
+        setCerts(rows.filter((c) => (c.status || 'verified') !== 'revoked'));
+      })
+      .catch(() => active && setCerts([]));
+    return () => {
+      active = false;
+    };
+  }, [kind, data?.farmId]);
 
   useEffect(() => {
     let active = true;
@@ -110,7 +132,7 @@ export default function Verify() {
 
   if (kind === 'shipment')
     return <ShipmentView shipment={data} batches={shipmentBatches} saved={saved} />;
-  return <BatchView batch={data} saved={saved} />;
+  return <BatchView batch={data} saved={saved} certs={certs} />;
 }
 
 function SavedPill({ saved }) {
@@ -127,7 +149,7 @@ function SavedPill({ saved }) {
 
 /* ---------- Batch verify ---------- */
 
-function BatchView({ batch, saved }) {
+function BatchView({ batch, saved, certs = [] }) {
   const initials = (batch.farmerName || batch.farmName || '?')
     .split(/\s+/)
     .map((s) => s[0])
@@ -201,6 +223,15 @@ function BatchView({ batch, saved }) {
             <blockquote className="mt-6 border-l-2 border-koko-teal pl-4 font-display text-lg italic text-koko-ink sm:text-xl">
               “{batch.farmStory}”
             </blockquote>
+          )}
+
+          {certs.length > 0 && (
+            <div className="mt-6">
+              <p className="eyebrow">Certifications</p>
+              <div className="mt-2">
+                <CertBadgeRow certs={certs} />
+              </div>
+            </div>
           )}
 
           {batch.farmId && (

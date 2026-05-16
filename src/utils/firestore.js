@@ -763,6 +763,117 @@ export const orgsFromAuthClaims = async (auth) => {
   }
 };
 
+// ---------- Programs & certifications ----------
+
+const programsCol = (orgId) => collection(orgDoc(orgId), 'programs');
+const programDoc = (orgId, programId) =>
+  doc(orgDoc(orgId), 'programs', programId);
+
+export const subscribeOrgPrograms = (orgId, cb) =>
+  onSnapshot(programsCol(orgId), (snap) =>
+    cb(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+  );
+
+export const listOrgPrograms = async (orgId) => {
+  const snap = await getDocs(programsCol(orgId));
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+};
+
+export const getProgram = async (orgId, programId) => {
+  const snap = await getDoc(programDoc(orgId, programId));
+  return snap.exists() ? { id: snap.id, ...snap.data() } : null;
+};
+
+export const createProgram = async (orgId, data) => {
+  const ref = await addDoc(programsCol(orgId), {
+    orgId,
+    name: String(data?.name || '').trim(),
+    description: String(data?.description || '').trim(),
+    logoUrl: data?.logoUrl || null,
+    validityMonths: Number(data?.validityMonths) || 12,
+    active: data?.active ?? true,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp()
+  });
+  return ref.id;
+};
+
+export const updateProgram = (orgId, programId, data) =>
+  setDoc(
+    programDoc(orgId, programId),
+    { ...data, updatedAt: serverTimestamp() },
+    { merge: true }
+  );
+
+export const deleteProgram = (orgId, programId) =>
+  deleteDoc(programDoc(orgId, programId));
+
+// ---------- Certifications (top-level) ----------
+
+const CERT_STATUS = ['verified', 'pending', 'revoked'];
+
+export const createCertification = async (data) => {
+  const issuedAt = serverTimestamp();
+  const ref = await addDoc(collection(db, 'certifications'), {
+    orgId: String(data.orgId),
+    orgName: String(data.orgName || '').trim(),
+    programId: String(data.programId),
+    programName: String(data.programName || '').trim(),
+    logoUrl: data.logoUrl || null,
+    farmUid: String(data.farmUid),
+    farmNameHint: String(data.farmNameHint || '').trim(),
+    status: CERT_STATUS.includes(data.status) ? data.status : 'verified',
+    notes: String(data.notes || '').trim(),
+    auditedBy: data.auditedBy || null,
+    auditedByName: String(data.auditedByName || '').trim(),
+    issuedAt,
+    expiresAt: data.expiresAt || null
+  });
+  return ref.id;
+};
+
+export const updateCertification = (certId, data) =>
+  setDoc(
+    doc(db, 'certifications', certId),
+    { ...data, updatedAt: serverTimestamp() },
+    { merge: true }
+  );
+
+export const deleteCertification = (certId) =>
+  deleteDoc(doc(db, 'certifications', certId));
+
+export const subscribeCertsByFarm = (farmUid, cb) => {
+  const q = query(
+    collection(db, 'certifications'),
+    where('farmUid', '==', farmUid),
+    orderBy('issuedAt', 'desc')
+  );
+  return onSnapshot(q, (snap) =>
+    cb(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+  );
+};
+
+export const subscribeCertsByOrg = (orgId, cb) => {
+  const q = query(
+    collection(db, 'certifications'),
+    where('orgId', '==', orgId),
+    orderBy('issuedAt', 'desc')
+  );
+  return onSnapshot(q, (snap) =>
+    cb(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+  );
+};
+
+export const listCertsByFarm = async (farmUid) => {
+  const q = query(
+    collection(db, 'certifications'),
+    where('farmUid', '==', farmUid),
+    orderBy('issuedAt', 'desc')
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+};
+
 // ---------- Platform admin helpers ----------
 
 /**
