@@ -37,6 +37,7 @@ Server-side foundation for KokoPass: Firestore triggers, scheduled jobs, HTTPS w
 | `dailyAggregates` | Scheduled (02:00 Pacific/Apia) | Stub for nightly rollups, digest emails, log archival. |
 | `stripeWebhook` | HTTPS POST | Stub for `$4.55/bag` invoice + payment hooks. Wire to Stripe once keys are loaded. |
 | `grantAdmin` | Callable | Refuses by design. Platform admin is set manually via the Admin SDK. |
+| `inviteOrgMember` | Callable | Looks up a user by email via the Admin SDK and writes the membership doc. Caller must be org admin (or platform admin). |
 | `health` | HTTPS GET | Returns `{ok: true}` — useful for uptime monitoring. |
 
 ## Prerequisites

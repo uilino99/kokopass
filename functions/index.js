@@ -367,6 +367,103 @@ export const grantAdmin = onCall(
   }
 );
 
+// ===========================================================================
+//  inviteOrgMember — callable: look up by email and add as org member
+// ===========================================================================
+//
+// Called by /org/:orgId/members. The client can't look up users by
+// email directly (privacy), so this function bridges the gap. The
+// invited user must already have a KokoPass account; if not, we
+// return a clear "ask them to register first" error.
+
+const ALLOWED_ORG_ROLES = ['admin', 'staff', 'fieldAgent', 'auditor'];
+
+export const inviteOrgMember = onCall(
+  { region: REGION },
+  async (request) => {
+    const { auth, data } = request;
+    if (!auth?.uid) {
+      throw new HttpsError('unauthenticated', 'Sign in required.');
+    }
+
+    const orgId = String(data?.orgId || '').trim();
+    const email = String(data?.email || '').trim().toLowerCase();
+    const requestedRole = data?.role;
+    const role = ALLOWED_ORG_ROLES.includes(requestedRole) ? requestedRole : 'staff';
+    const displayName = String(data?.displayName || '').trim();
+    const regions = Array.isArray(data?.regions) ? data.regions : [];
+
+    if (!orgId) throw new HttpsError('invalid-argument', 'orgId is required.');
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      throw new HttpsError('invalid-argument', 'A valid email is required.');
+    }
+
+    // Authorise the caller: org admin or platform admin.
+    const isPlatformAdmin = auth.token?.admin === true;
+    if (!isPlatformAdmin) {
+      const callerMember = await db
+        .doc(`organizations/${orgId}/members/${auth.uid}`)
+        .get();
+      if (!callerMember.exists || callerMember.data()?.role !== 'admin') {
+        throw new HttpsError(
+          'permission-denied',
+          'Only org admins can invite new members.'
+        );
+      }
+    }
+
+    // Resolve the invitee. The Admin SDK enforces lower-case email
+    // lookups; we normalised above.
+    let target;
+    try {
+      target = await getAuth().getUserByEmail(email);
+    } catch (err) {
+      if (err?.code === 'auth/user-not-found') {
+        throw new HttpsError(
+          'not-found',
+          'No KokoPass account uses that email. Ask them to register first, then re-invite.'
+        );
+      }
+      logger.error('inviteOrgMember.lookupFailed', { email, message: err?.message });
+      throw new HttpsError('internal', 'Could not look up that user.');
+    }
+
+    // Idempotency: refuse to overwrite an existing membership.
+    const memberRef = db.doc(`organizations/${orgId}/members/${target.uid}`);
+    const existing = await memberRef.get();
+    if (existing.exists) {
+      throw new HttpsError(
+        'already-exists',
+        `${target.email || 'That user'} is already a member of this organization.`
+      );
+    }
+
+    // Write. The syncMembershipClaims trigger fires next and updates
+    // the new member's request.auth.token.orgs map.
+    await memberRef.set({
+      uid: target.uid,
+      role,
+      regions,
+      displayName: displayName || target.displayName || '',
+      invitedBy: auth.uid,
+      joinedAt: FieldValue.serverTimestamp()
+    });
+
+    logger.info('inviteOrgMember.added', {
+      orgId,
+      memberUid: target.uid,
+      role
+    });
+
+    return {
+      uid: target.uid,
+      email: target.email || null,
+      displayName: target.displayName || null,
+      role
+    };
+  }
+);
+
 export const health = onRequest({ region: REGION }, (req, res) => {
   res.status(200).json({
     ok: true,

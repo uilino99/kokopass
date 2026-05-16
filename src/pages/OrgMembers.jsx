@@ -5,6 +5,7 @@ import { useUserOrgs } from '../hooks/useUserOrgs.js';
 import { useToast } from '../components/Toast.jsx';
 import {
   getOrganization,
+  inviteOrgMemberByEmail,
   ORG_MEMBER_ROLES,
   removeOrgMember,
   subscribeOrgMembers,
@@ -41,11 +42,13 @@ export default function OrgMembers() {
   const [confirmRemove, setConfirmRemove] = useState(null); // memberUid being confirmed
 
   const [form, setForm] = useState({
+    email: '',
     uid: '',
     displayName: '',
     role: 'staff',
     regionsText: ''
   });
+  const [byUid, setByUid] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -104,30 +107,79 @@ export default function OrgMembers() {
 
   const onAdd = async (e) => {
     e.preventDefault();
-    const uid = form.uid.trim();
-    if (!uid) {
-      toast.error('Paste the UID of the person to invite.');
+    const regions = form.regionsText
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    if (byUid) {
+      const uid = form.uid.trim();
+      if (!uid) {
+        toast.error('Paste the UID of the person to invite.');
+        return;
+      }
+      if (members.some((m) => m.uid === uid)) {
+        toast.error('That person is already a member.');
+        return;
+      }
+      setBusy(true);
+      try {
+        await upsertOrgMember(orgId, uid, {
+          role: form.role,
+          displayName: form.displayName.trim(),
+          regions,
+          invitedBy: user.uid
+        });
+        toast.success(`Added ${form.displayName.trim() || uid.slice(0, 8) + '…'}.`);
+        setForm({ email: '', uid: '', displayName: '', role: 'staff', regionsText: '' });
+      } catch (err) {
+        toast.error(err.message || 'Could not add member.');
+      } finally {
+        setBusy(false);
+      }
       return;
     }
-    if (members.some((m) => m.uid === uid)) {
-      toast.error('That person is already a member.');
+
+    // Email path
+    const email = form.email.trim();
+    if (!email) {
+      toast.error('Enter the email of the person to invite.');
       return;
     }
     setBusy(true);
     try {
-      await upsertOrgMember(orgId, uid, {
+      const result = await inviteOrgMemberByEmail(orgId, {
+        email,
         role: form.role,
         displayName: form.displayName.trim(),
-        regions: form.regionsText
-          .split(',')
-          .map((s) => s.trim())
-          .filter(Boolean),
-        invitedBy: user.uid
+        regions
       });
-      toast.success(`Added ${form.displayName.trim() || uid.slice(0, 8) + '…'}.`);
-      setForm({ uid: '', displayName: '', role: 'staff', regionsText: '' });
+      toast.success(
+        `Invited ${result.displayName || result.email || 'member'}.`
+      );
+      setForm({ email: '', uid: '', displayName: '', role: 'staff', regionsText: '' });
     } catch (err) {
-      toast.error(err.message || 'Could not add member.');
+      // Firebase callable errors expose .code and .message.
+      const code = err?.code || '';
+      if (code === 'functions/not-found') {
+        toast.error(
+          'No KokoPass account uses that email. Ask them to register first, then re-invite.'
+        );
+      } else if (code === 'functions/already-exists') {
+        toast.error(err.message || 'Already a member.');
+      } else if (code === 'functions/permission-denied') {
+        toast.error('Only org admins can invite by email.');
+      } else if (code === 'functions/unauthenticated') {
+        toast.error('Please sign in again.');
+      } else if (code === 'functions/invalid-argument') {
+        toast.error(err.message || 'Check the email and try again.');
+      } else if (code === 'functions/internal' || code === 'internal') {
+        toast.error(
+          'Invite Function unavailable. Use the "by UID" fallback below for now.'
+        );
+      } else {
+        toast.error(err.message || 'Could not invite.');
+      }
     } finally {
       setBusy(false);
     }
@@ -177,23 +229,58 @@ export default function OrgMembers() {
         <div className="divider-teal mt-4 ml-0" />
         <p className="mt-4 text-sm text-koko-body">
           Invite by UID (for now — email invites land in a future commit). Ask the person
-          to send you their UID from <em>Your organizations</em>.
+          to send you their email. They need a KokoPass account first; if they don't
+          have one yet, ask them to register, then come back here.
         </p>
       </header>
 
       {/* Add form */}
       <form onSubmit={onAdd} className="card-elevated space-y-4 animate-slide-up">
-        <p className="eyebrow">Add a member</p>
+        <div className="flex items-center justify-between">
+          <p className="eyebrow">Add a member</p>
+          <button
+            type="button"
+            onClick={() => setByUid((v) => !v)}
+            className="text-xs font-medium text-koko-teal hover:underline"
+          >
+            {byUid ? '↩ Use email instead' : 'Advanced: invite by UID →'}
+          </button>
+        </div>
+
         <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="User UID" id="m-uid" required hint="Paste the user's UID exactly.">
-            <input
+          {byUid ? (
+            <Field
+              label="User UID"
               id="m-uid"
-              className="input font-mono text-sm"
-              value={form.uid}
-              onChange={set('uid')}
-              placeholder="abc123def456…"
-            />
-          </Field>
+              required
+              hint="Paste the user's UID exactly. Use when email isn't an option."
+            >
+              <input
+                id="m-uid"
+                className="input font-mono text-sm"
+                value={form.uid}
+                onChange={set('uid')}
+                placeholder="abc123def456…"
+              />
+            </Field>
+          ) : (
+            <Field
+              label="Email"
+              id="m-email"
+              required
+              hint="They need an existing KokoPass account."
+            >
+              <input
+                id="m-email"
+                type="email"
+                autoComplete="off"
+                className="input text-sm"
+                value={form.email}
+                onChange={set('email')}
+                placeholder="name@example.com"
+              />
+            </Field>
+          )}
           <Field label="Display name" id="m-name" hint="Hint shown in the team list.">
             <input
               id="m-name"
@@ -223,7 +310,8 @@ export default function OrgMembers() {
         </div>
         <div className="flex justify-end">
           <button className="btn-accent" disabled={busy}>
-            {busy && <Spinner size="sm" />} {busy ? 'Adding…' : 'Add member'}
+            {busy && <Spinner size="sm" />}{' '}
+            {busy ? 'Inviting…' : byUid ? 'Add by UID' : 'Send invite'}
           </button>
         </div>
       </form>

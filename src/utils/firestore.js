@@ -16,7 +16,8 @@ import {
   where,
   writeBatch
 } from 'firebase/firestore';
-import { db } from '../firebase.js';
+import { httpsCallable } from 'firebase/functions';
+import { db, functions } from '../firebase.js';
 
 export const COLLECTIONS = {
   users: 'users',
@@ -746,6 +747,34 @@ export const upsertOrgMember = (orgId, uid, data) =>
 
 export const removeOrgMember = (orgId, uid) =>
   deleteDoc(memberDoc(orgId, uid));
+
+/**
+ * Invite a user to an org by email. The client can't look up users by
+ * email directly, so this calls the `inviteOrgMember` Cloud Function
+ * which uses the Admin SDK to resolve the email then writes the
+ * member doc.
+ *
+ * Returns the resolved invitee on success:
+ *   { uid, email, displayName, role }
+ *
+ * Throws a Firebase Functions error with one of these codes:
+ *   - unauthenticated  → not signed in
+ *   - invalid-argument → missing / malformed email or orgId
+ *   - permission-denied → caller isn't an org admin
+ *   - not-found        → no KokoPass account with that email
+ *   - already-exists   → user is already a member of this org
+ */
+export const inviteOrgMemberByEmail = async (orgId, payload) => {
+  const callable = httpsCallable(functions, 'inviteOrgMember');
+  const result = await callable({
+    orgId,
+    email: payload?.email,
+    role: payload?.role,
+    displayName: payload?.displayName,
+    regions: payload?.regions
+  });
+  return result.data;
+};
 
 /**
  * Read the signed-in user's org memberships from the ID-token claims.
