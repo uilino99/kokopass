@@ -50,7 +50,7 @@ export default function Register() {
     if (hasErrors(v)) return;
     setBusy(true);
     try {
-      const { claimedEnrollmentId } = await register(form);
+      const { claimedEnrollmentId, claimedInvites } = await register(form);
 
       if (form.role === 'farmer' && form.claimCode?.trim()) {
         if (claimedEnrollmentId) {
@@ -60,6 +60,17 @@ export default function Register() {
         }
       } else {
         toast.success('Account created. Welcome to KokoPass!');
+      }
+
+      // If a pending org invite was waiting on this email, surface it.
+      if (claimedInvites?.claimed > 0) {
+        const first = claimedInvites.orgs?.[0];
+        const more = claimedInvites.claimed - 1;
+        toast.success(
+          first?.orgName
+            ? `Joined ${first.orgName}${more > 0 ? ` and ${more} more org${more === 1 ? '' : 's'}` : ''}.`
+            : `Joined ${claimedInvites.claimed} organization${claimedInvites.claimed === 1 ? '' : 's'}.`
+        );
       }
 
       // Farmers who claimed go straight to the dashboard since their farm

@@ -777,6 +777,32 @@ export const inviteOrgMemberByEmail = async (orgId, payload) => {
 };
 
 /**
+ * Fire on register to pick up any pendingInvites that match the new
+ * user's email. Best-effort: silently returns `{ claimed: 0 }` if the
+ * Function is unreachable or the user has no email on their token.
+ */
+export const claimPendingInvitesForCurrentUser = async () => {
+  try {
+    const callable = httpsCallable(functions, 'claimPendingInvites');
+    const result = await callable({});
+    return result.data || { claimed: 0, orgs: [] };
+  } catch {
+    return { claimed: 0, orgs: [] };
+  }
+};
+
+export const subscribeOrgPendingInvites = (orgId, cb) => {
+  const q = query(
+    collection(db, 'pendingInvites'),
+    where('orgId', '==', orgId),
+    orderBy('createdAt', 'desc')
+  );
+  return onSnapshot(q, (snap) =>
+    cb(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+  );
+};
+
+/**
  * Read the signed-in user's org memberships from the ID-token claims.
  * Returns `{ orgId: role }` or `{}` if not signed in or no claims yet.
  * Maintained by the syncMembershipClaims Cloud Function.

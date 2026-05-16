@@ -323,9 +323,41 @@ export const dailyAggregates = onSchedule(
   { schedule: 'every day 02:00', timeZone: 'Pacific/Apia', region: REGION },
   async () => {
     // Future: recompute global / per-region rollups from scratch, send a
-    // pilot-progress digest email to the ops team, expire stale invites,
-    // archive audit logs older than 90 days.
+    // pilot-progress digest email to the ops team, archive audit logs
+    // older than 90 days.
     logger.info('dailyAggregates.run', { at: new Date().toISOString() });
+  }
+);
+
+// Flip status='verified' certifications to 'expired' once their
+// expiresAt has passed. Runs hourly so a freshly-expired cert clears
+// from public badges within an hour without waiting for the next page
+// load to compute it client-side.
+export const expireCertifications = onSchedule(
+  { schedule: 'every 60 minutes', region: REGION },
+  async () => {
+    const now = new Date();
+    const snap = await db
+      .collection('certifications')
+      .where('status', '==', 'verified')
+      .where('expiresAt', '<=', now)
+      .limit(500)
+      .get();
+
+    if (snap.empty) {
+      logger.info('certs.expireRun', { expired: 0 });
+      return;
+    }
+
+    const batch = db.batch();
+    snap.forEach((doc) => {
+      batch.update(doc.ref, {
+        status: 'expired',
+        updatedAt: FieldValue.serverTimestamp()
+      });
+    });
+    await batch.commit();
+    logger.info('certs.expireRun', { expired: snap.size });
   }
 );
 
@@ -419,10 +451,24 @@ export const inviteOrgMember = onCall(
       target = await getAuth().getUserByEmail(email);
     } catch (err) {
       if (err?.code === 'auth/user-not-found') {
-        throw new HttpsError(
-          'not-found',
-          'No KokoPass account uses that email. Ask them to register first, then re-invite.'
-        );
+        // Fall back to a pending invite. The new user will auto-claim
+        // it the moment they register with this email — see
+        // claimPendingInvites below + the AuthContext register hook.
+        const orgSnap = await db.doc(`organizations/${orgId}`).get();
+        const orgName = orgSnap.exists ? (orgSnap.data()?.name || '') : '';
+        await db.collection('pendingInvites').add({
+          orgId,
+          orgName,
+          email,
+          role,
+          regions,
+          displayName,
+          invitedBy: auth.uid,
+          status: 'pending',
+          createdAt: FieldValue.serverTimestamp()
+        });
+        logger.info('inviteOrgMember.pending', { orgId, email });
+        return { status: 'pending', email, role };
       }
       logger.error('inviteOrgMember.lookupFailed', { email, message: err?.message });
       throw new HttpsError('internal', 'Could not look up that user.');
@@ -456,11 +502,82 @@ export const inviteOrgMember = onCall(
     });
 
     return {
+      status: 'added',
       uid: target.uid,
       email: target.email || null,
       displayName: target.displayName || null,
       role
     };
+  }
+);
+
+// ===========================================================================
+//  claimPendingInvites — callable: a fresh user picks up any invites
+// ===========================================================================
+//
+// Called from AuthContext.register right after the user doc is
+// written. Walks pendingInvites where email matches the new user's
+// token email, creates the membership doc, and marks the invite as
+// claimed. Idempotent — already-member rows are flipped to
+// 'superseded' without overwriting the existing membership.
+
+export const claimPendingInvites = onCall(
+  { region: REGION },
+  async (request) => {
+    const { auth } = request;
+    if (!auth?.uid) {
+      throw new HttpsError('unauthenticated', 'Sign in required.');
+    }
+    const email = String(auth.token?.email || '').toLowerCase();
+    if (!email) {
+      return { claimed: 0, orgs: [] };
+    }
+    const snap = await db
+      .collection('pendingInvites')
+      .where('email', '==', email)
+      .where('status', '==', 'pending')
+      .limit(20)
+      .get();
+    if (snap.empty) {
+      return { claimed: 0, orgs: [] };
+    }
+
+    const batch = db.batch();
+    const claimedOrgs = [];
+    for (const doc of snap.docs) {
+      const d = doc.data();
+      const memberRef = db.doc(`organizations/${d.orgId}/members/${auth.uid}`);
+      const existing = await memberRef.get();
+      if (existing.exists) {
+        batch.update(doc.ref, {
+          status: 'superseded',
+          claimedBy: auth.uid,
+          claimedAt: FieldValue.serverTimestamp()
+        });
+        continue;
+      }
+      batch.set(memberRef, {
+        uid: auth.uid,
+        role: d.role || 'staff',
+        regions: d.regions || [],
+        displayName: d.displayName || auth.token?.name || '',
+        invitedBy: d.invitedBy || null,
+        joinedAt: FieldValue.serverTimestamp()
+      });
+      batch.update(doc.ref, {
+        status: 'claimed',
+        claimedBy: auth.uid,
+        claimedAt: FieldValue.serverTimestamp()
+      });
+      claimedOrgs.push({ orgId: d.orgId, orgName: d.orgName, role: d.role });
+    }
+    await batch.commit();
+    logger.info('pendingInvites.claimed', {
+      email,
+      uid: auth.uid,
+      claimed: claimedOrgs.length
+    });
+    return { claimed: claimedOrgs.length, orgs: claimedOrgs };
   }
 );
 

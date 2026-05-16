@@ -9,7 +9,11 @@ import {
 } from 'firebase/auth';
 import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase.js';
-import { COLLECTIONS, claimEnrollment } from '../utils/firestore.js';
+import {
+  COLLECTIONS,
+  claimEnrollment,
+  claimPendingInvitesForCurrentUser
+} from '../utils/firestore.js';
 
 export const AuthContext = createContext(null);
 
@@ -66,11 +70,22 @@ export function AuthProvider({ children }) {
       }
     }
 
+    // Pick up any pendingInvites that match this email — added by org
+    // admins via inviteOrgMember when no auth account existed yet.
+    // Best-effort: if the callable isn't deployed or returns 0, no
+    // harm done.
+    let claimedInvites = { claimed: 0, orgs: [] };
+    try {
+      claimedInvites = await claimPendingInvitesForCurrentUser();
+    } catch {
+      claimedInvites = { claimed: 0, orgs: [] };
+    }
+
     const finalProfile = claimedEnrollmentId
       ? { ...userDoc, claimedEnrollmentId }
       : userDoc;
     setProfile(finalProfile);
-    return { user: cred.user, claimedEnrollmentId };
+    return { user: cred.user, claimedEnrollmentId, claimedInvites };
   };
 
   const login = (email, password) => signInWithEmailAndPassword(auth, email, password);

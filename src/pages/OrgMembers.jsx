@@ -9,6 +9,7 @@ import {
   ORG_MEMBER_ROLES,
   removeOrgMember,
   subscribeOrgMembers,
+  subscribeOrgPendingInvites,
   upsertOrgMember
 } from '../utils/firestore.js';
 import Spinner, { FullPageSpinner } from '../components/Spinner.jsx';
@@ -40,6 +41,7 @@ export default function OrgMembers() {
   const [membersLoading, setMembersLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState(null); // memberUid being confirmed
+  const [pendingInvites, setPendingInvites] = useState([]);
 
   const [form, setForm] = useState({
     email: '',
@@ -67,6 +69,14 @@ export default function OrgMembers() {
     const unsub = subscribeOrgMembers(orgId, (rows) => {
       setMembers(rows);
       setMembersLoading(false);
+    });
+    return unsub;
+  }, [orgId]);
+
+  useEffect(() => {
+    const unsub = subscribeOrgPendingInvites(orgId, (rows) => {
+      // Filter to status==='pending'; claimed/superseded are history.
+      setPendingInvites(rows.filter((r) => (r.status || 'pending') === 'pending'));
     });
     return unsub;
   }, [orgId]);
@@ -154,18 +164,20 @@ export default function OrgMembers() {
         displayName: form.displayName.trim(),
         regions
       });
-      toast.success(
-        `Invited ${result.displayName || result.email || 'member'}.`
-      );
+      if (result?.status === 'pending') {
+        toast.success(
+          `${email} doesn't have a KokoPass account yet. We'll auto-add them the moment they register.`
+        );
+      } else {
+        toast.success(
+          `Invited ${result?.displayName || result?.email || 'member'}.`
+        );
+      }
       setForm({ email: '', uid: '', displayName: '', role: 'staff', regionsText: '' });
     } catch (err) {
       // Firebase callable errors expose .code and .message.
       const code = err?.code || '';
-      if (code === 'functions/not-found') {
-        toast.error(
-          'No KokoPass account uses that email. Ask them to register first, then re-invite.'
-        );
-      } else if (code === 'functions/already-exists') {
+      if (code === 'functions/already-exists') {
         toast.error(err.message || 'Already a member.');
       } else if (code === 'functions/permission-denied') {
         toast.error('Only org admins can invite by email.');
@@ -387,6 +399,45 @@ export default function OrgMembers() {
           </ul>
         )}
       </section>
+
+      {/* Pending invites */}
+      {pendingInvites.length > 0 && (
+        <section>
+          <div className="mb-3">
+            <h2 className="font-display text-2xl text-koko-ink">
+              {pendingInvites.length} pending invite
+              {pendingInvites.length === 1 ? '' : 's'}
+            </h2>
+            <p className="text-xs text-koko-muted">
+              These emails don't have KokoPass accounts yet. They'll auto-join the moment
+              they register with the matching email.
+            </p>
+          </div>
+          <ul className="grid gap-2">
+            {pendingInvites.map((inv) => (
+              <li
+                key={inv.id}
+                className="card border-koko-warning/30 bg-koko-warningBg/40"
+              >
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-baseline gap-2">
+                      <span className="font-medium text-koko-ink">{inv.email}</span>
+                      <span className="badge-navy">{ROLE_LABEL[inv.role] || inv.role}</span>
+                      <span className="badge-warning">Pending</span>
+                    </div>
+                    {inv.regions?.length > 0 && (
+                      <p className="mt-1 text-xs text-koko-muted">
+                        Regions: {inv.regions.join(', ')}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </div>
   );
 }

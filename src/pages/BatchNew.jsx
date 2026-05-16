@@ -73,6 +73,7 @@ export default function BatchNew() {
         farmerAvatarUrl: profile?.avatarUrl || null,
         farmHeroUrl: farm.heroUrl || null,
         farmStory: farm.story || '',
+        farmBoundary: Array.isArray(farm.boundary) ? farm.boundary : [],
         harvestDate: form.harvestDate,
         weightKg: Number(form.weightKg),
         quality: form.quality,

@@ -8,6 +8,7 @@ import {
   subscribeBatch
 } from '../utils/firestore.js';
 import { useAuth } from '../hooks/useAuth.js';
+import BoundaryPicker from '../components/BoundaryPicker.jsx';
 import { CertBadgeRow } from '../components/CertBadge.jsx';
 import { FullPageSpinner } from '../components/Spinner.jsx';
 import Seo from '../components/Seo.jsx';
@@ -290,6 +291,20 @@ function BatchView({ batch, saved, certs = [] }) {
                 />
               </a>
             ))}
+          </div>
+        </section>
+      )}
+
+      {/* Farm boundary (snapshotted onto the batch at creation) */}
+      {Array.isArray(batch.farmBoundary) && batch.farmBoundary.length >= 3 && (
+        <section className="card-elevated animate-slide-up">
+          <p className="eyebrow">Where it grew</p>
+          <h2 className="mt-1 font-display text-2xl text-koko-ink">Farm boundary</h2>
+          <p className="mt-1 text-sm text-koko-muted">
+            Captured by the farmer when this batch was recorded.
+          </p>
+          <div className="mt-4">
+            <BoundaryPicker value={batch.farmBoundary} onChange={() => {}} readOnly height={280} />
           </div>
         </section>
       )}

@@ -162,6 +162,20 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // ---------- Pending org-member invites ----------
+    // Written exclusively by Cloud Functions (admin SDK bypasses).
+    // Invitees can read their own pending invites by matching their
+    // signed-in email; org admins can read invites scoped to their
+    // org; platform admin reads all.
+    match /pendingInvites/{inviteId} {
+      allow read: if isSignedIn() && (
+        resource.data.email == request.auth.token.email
+        || isOrgAdmin(resource.data.orgId)
+        || isPlatformAdmin()
+      );
+      allow write: if false;
+    }
+
     // ---------- Certifications ----------
     // Top-level collection so an auditor from a certifier org can write
     // without needing permissions on the farmer's /farms doc. Public-
