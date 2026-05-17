@@ -5,7 +5,8 @@ import {
   getExport,
   listCertsByFarm,
   recordScan,
-  subscribeBatch
+  subscribeBatch,
+  subscribeScanCount
 } from '../utils/firestore.js';
 import { useAuth } from '../hooks/useAuth.js';
 import BoundaryPicker from '../components/BoundaryPicker.jsx';
@@ -22,6 +23,16 @@ export default function Verify() {
   const [loading, setLoading] = useState(true);
   const [saved, setSaved] = useState(false);
   const [certs, setCerts] = useState([]);
+  const [scanCount, setScanCount] = useState(0);
+
+  // Live scan count for this batch/shipment — purely cosmetic on the
+  // public verify page; gives buyers light social proof that others
+  // have traced this bag.
+  useEffect(() => {
+    if (!id) return;
+    const unsub = subscribeScanCount(id, (c) => setScanCount(c.count || 0));
+    return unsub;
+  }, [id]);
   const recordedRef = useRef(null);
 
   // Fetch cert badges for the farm once we know the batch's farmId.
@@ -132,8 +143,15 @@ export default function Verify() {
   }
 
   if (kind === 'shipment')
-    return <ShipmentView shipment={data} batches={shipmentBatches} saved={saved} />;
-  return <BatchView batch={data} saved={saved} certs={certs} />;
+    return (
+      <ShipmentView
+        shipment={data}
+        batches={shipmentBatches}
+        saved={saved}
+        scanCount={scanCount}
+      />
+    );
+  return <BatchView batch={data} saved={saved} certs={certs} scanCount={scanCount} />;
 }
 
 function SavedPill({ saved }) {
@@ -150,7 +168,7 @@ function SavedPill({ saved }) {
 
 /* ---------- Batch verify ---------- */
 
-function BatchView({ batch, saved, certs = [] }) {
+function BatchView({ batch, saved, certs = [], scanCount = 0 }) {
   const initials = (batch.farmerName || batch.farmName || '?')
     .split(/\s+/)
     .map((s) => s[0])
@@ -173,7 +191,17 @@ function BatchView({ batch, saved, certs = [] }) {
   return (
     <div className="mx-auto max-w-3xl space-y-8 page">
       <Seo title={seoTitle} description={seoDesc} image={seoImage} kind="article" />
-      <SavedPill saved={saved} />
+      <div className="flex flex-wrap items-center justify-center gap-2">
+        <SavedPill saved={saved} />
+        {scanCount > 0 && (
+          <span
+            className="inline-flex items-center gap-1.5 rounded-full border border-koko-border bg-white px-3 py-1.5 text-xs font-medium text-koko-muted"
+            role="status"
+          >
+            👁 Traced by {scanCount} buyer{scanCount === 1 ? '' : 's'}
+          </span>
+        )}
+      </div>
       {/* Hero */}
       <header className="relative overflow-hidden rounded-3xl border border-koko-border bg-white shadow-md animate-slide-up">
         <div className="relative">
@@ -319,7 +347,7 @@ function BatchView({ batch, saved, certs = [] }) {
 
 /* ---------- Shipment verify ---------- */
 
-function ShipmentView({ shipment, batches, saved }) {
+function ShipmentView({ shipment, batches, saved, scanCount = 0 }) {
   const seoTitle = `${shipment.destination || 'Shipment'} · ${
     Number(shipment.totalKg ?? 0).toFixed(1)
   } kg`;
@@ -335,7 +363,17 @@ function ShipmentView({ shipment, batches, saved }) {
   return (
     <div className="mx-auto max-w-2xl space-y-8 page">
       <Seo title={seoTitle} description={seoDesc} kind="article" />
-      <SavedPill saved={saved} />
+      <div className="flex flex-wrap items-center justify-center gap-2">
+        <SavedPill saved={saved} />
+        {scanCount > 0 && (
+          <span
+            className="inline-flex items-center gap-1.5 rounded-full border border-koko-border bg-white px-3 py-1.5 text-xs font-medium text-koko-muted"
+            role="status"
+          >
+            👁 Traced by {scanCount} buyer{scanCount === 1 ? '' : 's'}
+          </span>
+        )}
+      </div>
       <div className="card-elevated text-center animate-slide-up">
         <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-koko-teal100 text-koko-teal animate-bounce-sm">
           <span className="text-2xl">✓</span>

@@ -152,6 +152,13 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Public per-ref scan counts written by onScanCreated. Document ID
+    // is the batch/shipment refId so reads are cheap single-doc fetches.
+    match /scanCounts/{refId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
     // ---------- Audit logs ----------
     // Written exclusively by Cloud Functions (admin SDK bypasses rules).
     // Readable by the platform admin, and by org admins when the log is

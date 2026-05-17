@@ -12,6 +12,7 @@ Server-side foundation for KokoPass: Firestore triggers, scheduled jobs, HTTPS w
 | `onShipmentCreated` | Firestore trigger | Bumps `aggregates/global` when an exporter ships. |
 | `onFarmCreated` | Firestore trigger | Bumps `aggregates/global.farms` and `regions.<slug>` for the per-region breakdown on `/impact`. |
 | `onFarmUpdated` | Firestore trigger | Moves the count between `regions.<slug>` when a farm's district changes. |
+| `onScanCreated` | Firestore trigger | Bumps `scanCounts/{refId}.count` when a buyer first scans a batch/shipment QR. Deterministic scan doc IDs mean this counts *unique buyers*, not total scan events. |
 
 **Audit-log triggers** (write to `audit_logs/{id}` on every interesting change)
 

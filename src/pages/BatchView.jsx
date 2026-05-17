@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { QRCodeCanvas } from 'qrcode.react';
-import { subscribeBatch } from '../utils/firestore.js';
+import { subscribeBatch, subscribeScanCount } from '../utils/firestore.js';
 import { useAuth } from '../hooks/useAuth.js';
 import { useToast } from '../components/Toast.jsx';
 import { FullPageSpinner } from '../components/Spinner.jsx';
@@ -12,6 +12,7 @@ export default function BatchView() {
   const toast = useToast();
   const [batch, setBatch] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [scanCount, setScanCount] = useState(0);
   const qrWrap = useRef(null);
 
   useEffect(() => {
@@ -19,6 +20,11 @@ export default function BatchView() {
       setBatch(b);
       setLoading(false);
     });
+    return unsub;
+  }, [id]);
+
+  useEffect(() => {
+    const unsub = subscribeScanCount(id, (c) => setScanCount(c.count || 0));
     return unsub;
   }, [id]);
 
@@ -70,6 +76,11 @@ export default function BatchView() {
             <QRCodeCanvas value={verifyUrl} size={220} level="H" includeMargin={false} fgColor="#003366" />
           </div>
           <p className="text-2xs uppercase tracking-widest text-koko-muted">Scan to verify</p>
+          {scanCount > 0 && (
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-koko-success/40 bg-koko-successBg px-3 py-1 text-xs font-semibold text-koko-success">
+              👁 Traced by {scanCount} buyer{scanCount === 1 ? '' : 's'}
+            </span>
+          )}
         </div>
         <div>
           <p className="eyebrow">Verified by KokoPass</p>

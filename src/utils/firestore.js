@@ -334,6 +334,42 @@ export function fetchRegionStats({ force = false, max = 1000 } = {}) {
   return _regionInflight;
 }
 
+// ---------- Per-batch / per-shipment scan counts ----------
+
+export const getScanCount = async (refId) => {
+  if (!refId) return { count: 0 };
+  const snap = await getDoc(doc(db, 'scanCounts', refId));
+  return snap.exists() ? { id: snap.id, ...snap.data() } : { count: 0 };
+};
+
+export const subscribeScanCount = (refId, cb) => {
+  if (!refId) {
+    cb({ count: 0 });
+    return () => {};
+  }
+  return onSnapshot(doc(db, 'scanCounts', refId), (snap) =>
+    cb(snap.exists() ? { id: snap.id, ...snap.data() } : { count: 0 })
+  );
+};
+
+/**
+ * Bulk-fetch counts for many refIds. Returns { [refId]: count } with
+ * 0 for any ref that has no row yet. Caps at 100 to bound parallel
+ * reads — caller chunks if it has more.
+ */
+export const getScanCounts = async (refIds = []) => {
+  const ids = refIds.filter(Boolean).slice(0, 100);
+  if (ids.length === 0) return {};
+  const results = await Promise.all(
+    ids.map((id) =>
+      getDoc(doc(db, 'scanCounts', id))
+        .then((s) => [id, (s.exists() && Number(s.data().count)) || 0])
+        .catch(() => [id, 0])
+    )
+  );
+  return Object.fromEntries(results);
+};
+
 // ---------- Aggregate counters (Landing) ----------
 
 let _aggregateCache = null;

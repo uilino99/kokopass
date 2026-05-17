@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.js';
-import { getFarm, subscribeBatchesByOwner } from '../utils/firestore.js';
+import {
+  getFarm,
+  getScanCounts,
+  subscribeBatchesByOwner
+} from '../utils/firestore.js';
 import { Skeleton, SkeletonCard } from '../components/Skeleton.jsx';
 
 export default function FarmerDashboard() {
@@ -10,6 +14,7 @@ export default function FarmerDashboard() {
   const [farmLoaded, setFarmLoaded] = useState(false);
   const [batches, setBatches] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [scanCounts, setScanCounts] = useState({});
 
   useEffect(() => {
     let active = true;
@@ -30,7 +35,21 @@ export default function FarmerDashboard() {
     };
   }, [user.uid]);
 
+  // Bulk-fetch scan counts whenever the batch list changes. Cheap per-
+  // doc read; capped at 100 in the helper.
+  useEffect(() => {
+    if (batches.length === 0) return;
+    let active = true;
+    getScanCounts(batches.map((b) => b.id)).then((counts) => {
+      if (active) setScanCounts(counts);
+    });
+    return () => {
+      active = false;
+    };
+  }, [batches]);
+
   const totalKg = batches.reduce((acc, b) => acc + (Number(b.weightKg) || 0), 0);
+  const totalScans = Object.values(scanCounts).reduce((a, n) => a + (n || 0), 0);
   const firstName = profile?.fullName?.split(' ')[0] || 'friend';
 
   return (
@@ -64,7 +83,7 @@ export default function FarmerDashboard() {
         </div>
       </header>
 
-      <div className="grid gap-5 sm:grid-cols-3">
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         <Stat
           label="Farm"
           value={farmLoaded ? farm?.farmName || 'Not set' : null}
@@ -79,6 +98,15 @@ export default function FarmerDashboard() {
           label="Total recorded"
           value={loading ? null : `${totalKg.toFixed(1)} kg`}
           sub="Verified cacao"
+        />
+        <Stat
+          label="Buyers traced"
+          value={loading ? null : totalScans}
+          sub={
+            totalScans === 0
+              ? 'No buyer scans yet'
+              : `Across all your batches`
+          }
         />
       </div>
 
@@ -133,6 +161,12 @@ export default function FarmerDashboard() {
                   <span className="text-sm text-koko-muted">kg</span>
                 </div>
                 <p className="mt-1 text-sm text-koko-body">{b.processing}</p>
+                {scanCounts[b.id] > 0 && (
+                  <p className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-koko-success">
+                    👁 Traced by {scanCounts[b.id]} buyer
+                    {scanCounts[b.id] === 1 ? '' : 's'}
+                  </p>
+                )}
                 <div className="divider !my-4" />
                 <div className="flex items-center justify-between text-xs text-koko-muted">
                   <span>Harvested {b.harvestDate}</span>

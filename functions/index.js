@@ -132,6 +132,32 @@ export const onFarmUpdated = onDocumentUpdated(
   }
 );
 
+// Buyer scans the QR -> /scans/{ownerUid_refId} is created (or
+// merged, on re-scan). Because the doc ID is deterministic per buyer
+// per ref, onDocumentCreated only fires the *first* time a given
+// buyer scans a given QR — so this counter measures *unique buyers
+// who traced this batch / shipment*, not total scan events.
+export const onScanCreated = onDocumentCreated(
+  { document: 'scans/{scanId}', region: REGION },
+  async (event) => {
+    const data = event.data?.data();
+    if (!data?.refId) return;
+    await db.doc(`scanCounts/${data.refId}`).set(
+      {
+        refId: data.refId,
+        refKind: data.refKind || 'batch',
+        count: FieldValue.increment(1),
+        lastAt: FieldValue.serverTimestamp()
+      },
+      { merge: true }
+    );
+    logger.info('scan.counted', {
+      refId: data.refId,
+      refKind: data.refKind || 'batch'
+    });
+  }
+);
+
 // ===========================================================================
 //  2. Audit-log triggers
 // ===========================================================================
