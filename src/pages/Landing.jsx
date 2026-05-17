@@ -128,18 +128,24 @@ export default function Landing() {
         <div className="px-6 py-12 sm:px-12 sm:py-16 text-center sm:text-left sm:flex sm:items-center sm:justify-between gap-8">
           <div>
             <p className="text-xs font-semibold uppercase tracking-widest text-koko-teal400">
-              For exporters & buyers
+              For partners & buyers
             </p>
             <h2 className="mt-3 font-display text-3xl text-white sm:text-4xl">
               Verified provenance, <span className="italic text-koko-teal400">at scale</span>.
             </h2>
             <p className="mt-3 max-w-xl text-sm text-white/80 sm:text-base">
-              Tamper-evident traceability with per-bag verification, exporter SaaS, and a buyer
-              dashboard for portfolio analytics.
+              Tamper-evident traceability with per-bag verification, exporter SaaS, certifier
+              workflows, and a buyer dashboard for portfolio analytics.
             </p>
           </div>
           <div className="mt-6 flex flex-wrap justify-center gap-3 sm:mt-0 sm:justify-end">
             <Link to="/register" className="btn-accent">Request access</Link>
+            <Link
+              to="/organizations"
+              className="btn !bg-white/10 text-white hover:!bg-white/20 border border-white/20"
+            >
+              See partners
+            </Link>
             <Link
               to="/exporters"
               className="btn !bg-white/10 text-white hover:!bg-white/20 border border-white/20"

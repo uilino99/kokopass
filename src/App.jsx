@@ -25,6 +25,7 @@ import ForgotPassword from './pages/ForgotPassword.jsx';
 import Inquiries from './pages/Inquiries.jsx';
 import Impact from './pages/Impact.jsx';
 import Orgs from './pages/Orgs.jsx';
+import Organizations from './pages/Organizations.jsx';
 import OrgNew from './pages/OrgNew.jsx';
 import OrgDashboard from './pages/OrgDashboard.jsx';
 import OrgMembers from './pages/OrgMembers.jsx';
@@ -59,6 +60,7 @@ export default function App() {
         <Route path="/verify/:id" element={<Verify />} />
         <Route path="/exporters" element={<Exporters />} />
         <Route path="/exporters/:id" element={<ExporterPublic />} />
+        <Route path="/organizations" element={<Organizations />} />
         <Route path="/impact" element={<Impact />} />
         <Route path="/farmers/:uid" element={<FarmerPublic />} />
 
