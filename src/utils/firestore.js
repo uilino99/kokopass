@@ -106,6 +106,17 @@ export const subscribeBatch = (id, cb) =>
     cb(snap.exists() ? { id: snap.id, ...snap.data() } : null)
   );
 
+/**
+ * Read the public farms collection. Caps at `max` to bound cost — when
+ * the pilot outgrows that, swap to a server-maintained aggregate
+ * (similar to the regionsMap approach in /impact).
+ */
+export const listAllFarms = async (max = 200) => {
+  const q = query(collection(db, COLLECTIONS.farms), limit(max));
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+};
+
 export const listBatchesByOwner = async (ownerUid, max) => {
   const constraints = [
     where('ownerUid', '==', ownerUid),

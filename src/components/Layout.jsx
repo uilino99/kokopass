@@ -160,6 +160,9 @@ export default function Layout({ children }) {
               <NavLink to="/impact" className="btn-ghost hidden md:inline-flex">
                 Impact
               </NavLink>
+              <NavLink to="/farmers" className="btn-ghost hidden lg:inline-flex">
+                Farmers
+              </NavLink>
               <NavLink to="/organizations" className="btn-ghost hidden lg:inline-flex">
                 Partners
               </NavLink>

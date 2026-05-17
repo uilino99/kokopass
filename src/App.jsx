@@ -15,6 +15,7 @@ import ExporterProfile from './pages/ExporterProfile.jsx';
 import Exporters from './pages/Exporters.jsx';
 import ExporterPublic from './pages/ExporterPublic.jsx';
 import FarmerPublic from './pages/FarmerPublic.jsx';
+import Farmers from './pages/Farmers.jsx';
 import AdminSeed from './pages/AdminSeed.jsx';
 import AdminDashboard from './pages/AdminDashboard.jsx';
 import AdminAudit from './pages/AdminAudit.jsx';
@@ -62,6 +63,7 @@ export default function App() {
         <Route path="/exporters/:id" element={<ExporterPublic />} />
         <Route path="/organizations" element={<Organizations />} />
         <Route path="/impact" element={<Impact />} />
+        <Route path="/farmers" element={<Farmers />} />
         <Route path="/farmers/:uid" element={<FarmerPublic />} />
 
         {/* Account */}
