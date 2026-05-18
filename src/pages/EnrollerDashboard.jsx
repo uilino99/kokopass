@@ -5,6 +5,7 @@ import { subscribeEnrollmentsByEnroller } from '../utils/firestore.js';
 import { fmtCsvDate } from '../utils/csv.js';
 import { Skeleton, SkeletonCard } from '../components/Skeleton.jsx';
 import ExportCsvButton from '../components/ExportCsvButton.jsx';
+import OnboardingTour from '../components/OnboardingTour.jsx';
 
 const PILOT_TARGET = 1000;
 
@@ -29,6 +30,7 @@ export default function EnrollerDashboard() {
 
   return (
     <div className="space-y-10">
+      <OnboardingTour role="enroller" />
       <header className="flex flex-col items-start justify-between gap-5 sm:flex-row sm:items-end animate-slide-up">
         <div>
           <p className="eyebrow">Pilot enrolment</p>

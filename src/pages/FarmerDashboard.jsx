@@ -9,6 +9,7 @@ import {
 import { fmtCsvDate } from '../utils/csv.js';
 import { Skeleton, SkeletonCard } from '../components/Skeleton.jsx';
 import ExportCsvButton from '../components/ExportCsvButton.jsx';
+import OnboardingTour from '../components/OnboardingTour.jsx';
 
 export default function FarmerDashboard() {
   const { user, profile } = useAuth();
@@ -56,6 +57,7 @@ export default function FarmerDashboard() {
 
   return (
     <div className="space-y-10">
+      <OnboardingTour role="farmer" />
       <header className="flex flex-col items-start justify-between gap-5 sm:flex-row sm:items-end animate-slide-up">
         <div className="flex items-start gap-4">
           {profile?.avatarUrl ? (

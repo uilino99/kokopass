@@ -185,6 +185,33 @@ export default function AccountSettings() {
           </button>
         </div>
       </section>
+
+      <section className="card-elevated animate-slide-up">
+        <p className="eyebrow">Help</p>
+        <h2 className="mt-1 font-display text-2xl text-koko-ink">Onboarding tour</h2>
+        <p className="mt-2 text-sm text-koko-body">
+          Replay the role-specific walkthrough — useful if you skipped it on first sign-in
+          or want a refresher.
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              try {
+                ['farmer', 'exporter', 'buyer', 'enroller'].forEach((r) =>
+                  localStorage.removeItem(`koko:tour-seen-${r}`)
+                );
+                toast.success('Tour reset. Open your dashboard to see it again.');
+              } catch {
+                toast.error('Could not reset.');
+              }
+            }}
+            className="btn-secondary"
+          >
+            Replay tour next visit
+          </button>
+        </div>
+      </section>
     </div>
   );
 }

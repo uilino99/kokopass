@@ -6,6 +6,7 @@ import { fmtCsvDate } from '../utils/csv.js';
 import { useToast } from '../components/Toast.jsx';
 import { Skeleton, SkeletonCard } from '../components/Skeleton.jsx';
 import ExportCsvButton from '../components/ExportCsvButton.jsx';
+import OnboardingTour from '../components/OnboardingTour.jsx';
 import Spinner from '../components/Spinner.jsx';
 
 const KIND_OPTIONS = [
@@ -96,6 +97,7 @@ export default function BuyerDashboard() {
 
   return (
     <div className="space-y-10">
+      <OnboardingTour role="buyer" />
       <header className="flex flex-col items-start justify-between gap-5 sm:flex-row sm:items-end animate-slide-up">
         <div>
           <p className="eyebrow">Buyer portfolio</p>
