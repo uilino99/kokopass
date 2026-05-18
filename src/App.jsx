@@ -48,6 +48,7 @@ import EnrollEdit from './pages/EnrollEdit.jsx';
 import EnrollBulk from './pages/EnrollBulk.jsx';
 import EnrollPrint from './pages/EnrollPrint.jsx';
 import Verify from './pages/Verify.jsx';
+import DevIndex from './pages/DevIndex.jsx';
 
 export default function App() {
   return (
@@ -368,6 +369,9 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+
+        {/* Dev-only preview index. Stripped in production builds. */}
+        {import.meta.env?.DEV && <Route path="/dev" element={<DevIndex />} />}
 
         <Route
           path="*"

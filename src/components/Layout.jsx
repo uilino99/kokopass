@@ -8,7 +8,7 @@ import InstallPrompt from './InstallPrompt.jsx';
 import OfflineBanner from './OfflineBanner.jsx';
 
 export default function Layout({ children }) {
-  const { user, profile, logout } = useAuth();
+  const { user, profile, logout, devPreviewRole } = useAuth();
   const navigate = useNavigate();
   const toast = useToast();
   const [unreadInquiries, setUnreadInquiries] = useState(0);
@@ -183,6 +183,14 @@ export default function Layout({ children }) {
           </div>
         )}
       </header>
+
+      {devPreviewRole && (
+        <div className="bg-koko-warning text-white px-4 py-1.5 text-center text-xs font-semibold no-print">
+          DEV PREVIEW · role:{' '}
+          <span className="font-mono uppercase">{devPreviewRole}</span> · data is empty ·{' '}
+          <Link to="/dev" className="underline">change preview</Link>
+        </div>
+      )}
 
       <OfflineBanner />
 

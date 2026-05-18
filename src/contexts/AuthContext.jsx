@@ -1,4 +1,5 @@
 import { createContext, useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
   createUserWithEmailAndPassword,
   onAuthStateChanged,
@@ -17,12 +18,69 @@ import {
 
 export const AuthContext = createContext(null);
 
+/**
+ * Dev-preview hook. Local-only: when running `npm run dev`, a
+ * `?devUser=<role>` query param injects a mock user + profile so the
+ * dashboards render without sign-in. Disabled in production builds
+ * via `import.meta.env.DEV`.
+ */
+function readDevPreviewRole(search) {
+  if (!import.meta.env?.DEV) return null;
+  try {
+    const params = new URLSearchParams(search);
+    const v = params.get('devUser');
+    if (!v) return null;
+    const role = String(v).toLowerCase();
+    if (['farmer', 'exporter', 'buyer', 'enroller', 'admin'].includes(role)) {
+      return role;
+    }
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
+
+function makeDevUser(role) {
+  const isAdmin = role === 'admin';
+  return {
+    user: {
+      uid: `dev-${role}`,
+      email: `dev.${role}@kokopass.local`,
+      displayName: `Dev ${role.charAt(0).toUpperCase()}${role.slice(1)}`,
+      getIdTokenResult: async () => ({ claims: { admin: isAdmin, orgs: {} } }),
+      getIdToken: async () => 'dev-token'
+    },
+    profile: {
+      uid: `dev-${role}`,
+      email: `dev.${role}@kokopass.local`,
+      fullName: `Dev ${role.charAt(0).toUpperCase()}${role.slice(1)}`,
+      phone: '',
+      role: isAdmin ? 'farmer' : role,
+      admin: isAdmin,
+      createdAt: new Date()
+    }
+  };
+}
+
 export function AuthProvider({ children }) {
+  const location = useLocation();
+  const devRole = readDevPreviewRole(location.search);
+
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Dev-preview: skip the real Firebase listener and serve a mock
+    // user. Re-runs when ?devUser= changes so a /dev nav between
+    // roles works without a full reload.
+    if (devRole) {
+      const mock = makeDevUser(devRole);
+      setUser(mock.user);
+      setProfile(mock.profile);
+      setLoading(false);
+      return;
+    }
     const unsub = onAuthStateChanged(auth, async (u) => {
       setUser(u);
       if (u) {
@@ -34,7 +92,7 @@ export function AuthProvider({ children }) {
       setLoading(false);
     });
     return unsub;
-  }, []);
+  }, [devRole]);
 
   const register = async ({
     email,
@@ -115,7 +173,8 @@ export function AuthProvider({ children }) {
     login,
     logout,
     resetPassword,
-    updateProfile: updateUserProfile
+    updateProfile: updateUserProfile,
+    devPreviewRole: devRole
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
