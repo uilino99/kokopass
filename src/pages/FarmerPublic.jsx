@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import {
   countBatchesByOwner,
   getFarm,
+  listAuditVisitsByFarm,
   listBatchesByOwner,
   listCertsByFarm
 } from '../utils/firestore.js';
@@ -17,6 +18,7 @@ export default function FarmerPublic() {
   const [batches, setBatches] = useState([]);
   const [totalBatches, setTotalBatches] = useState(null);
   const [certs, setCerts] = useState([]);
+  const [audits, setAudits] = useState([]);
   const [loading, setLoading] = useState(true);
   const [missing, setMissing] = useState(false);
 
@@ -32,15 +34,17 @@ export default function FarmerPublic() {
           return;
         }
         setFarm(f);
-        const [recent, total, certRows] = await Promise.all([
+        const [recent, total, certRows, visitRows] = await Promise.all([
           listBatchesByOwner(uid, 12),
           countBatchesByOwner(uid).catch(() => null),
-          listCertsByFarm(uid).catch(() => [])
+          listCertsByFarm(uid).catch(() => []),
+          listAuditVisitsByFarm(uid, 6).catch(() => [])
         ]);
         if (!active) return;
         setBatches(recent);
         if (total != null) setTotalBatches(total);
         setCerts(certRows.filter((c) => (c.status || 'verified') !== 'revoked'));
+        setAudits(visitRows.filter((v) => (v.status || 'submitted') === 'submitted'));
       } finally {
         if (active) setLoading(false);
       }
@@ -270,6 +274,63 @@ export default function FarmerPublic() {
           </ul>
         )}
       </section>
+
+      {audits.length > 0 && (
+        <section>
+          <div className="mb-5">
+            <p className="eyebrow">Compliance trail</p>
+            <h2 className="mt-1 font-display text-2xl text-koko-ink sm:text-3xl">
+              Audit visits
+            </h2>
+          </div>
+          <ul className="grid gap-3 sm:grid-cols-2">
+            {audits.map((v) => {
+              const tone =
+                v.recommendation === 'pass'
+                  ? 'badge-success'
+                  : v.recommendation === 'fail'
+                    ? 'badge-error'
+                    : 'badge-warning';
+              return (
+                <li key={v.id} className="card">
+                  <div className="flex flex-wrap items-baseline justify-between gap-2">
+                    <div className="flex flex-wrap items-baseline gap-2">
+                      <span className={tone}>
+                        {v.recommendation === 'follow-up' ? 'Follow-up' : v.recommendation || 'pass'}
+                      </span>
+                      <span className="font-medium text-koko-ink">{v.visitDate}</span>
+                    </div>
+                    {v.programName && (
+                      <span className="text-2xs text-koko-teal">{v.programName}</span>
+                    )}
+                  </div>
+                  {v.findings && (
+                    <p className="mt-2 text-sm text-koko-body">{v.findings}</p>
+                  )}
+                  <div className="mt-2 text-xs text-koko-muted">
+                    by {v.auditorName || 'auditor'}
+                    {v.orgName ? ` · ${v.orgName}` : ''}
+                  </div>
+                  {v.photoUrls?.length > 0 && (
+                    <div className="mt-3 flex gap-1.5">
+                      {v.photoUrls.slice(0, 3).map((url) => (
+                        <a key={url} href={url} target="_blank" rel="noreferrer">
+                          <img
+                            src={url}
+                            alt=""
+                            className="h-12 w-12 rounded-md border border-koko-border object-cover"
+                            loading="lazy"
+                          />
+                        </a>
+                      ))}
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
     </div>
   );
 }

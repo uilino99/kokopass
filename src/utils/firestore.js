@@ -865,6 +865,74 @@ export const orgsFromAuthClaims = async (auth) => {
   }
 };
 
+// ---------- Audit visits ----------
+
+const AUDIT_RECOMMENDATION = ['pass', 'fail', 'follow-up'];
+const AUDIT_STATUS = ['draft', 'submitted'];
+
+export const createAuditVisit = async (data) => {
+  const ref = await addDoc(collection(db, 'auditVisits'), {
+    orgId: String(data.orgId),
+    orgName: String(data.orgName || '').trim(),
+    programId: data.programId || null,
+    programName: String(data.programName || '').trim(),
+    farmUid: String(data.farmUid),
+    farmNameHint: String(data.farmNameHint || '').trim(),
+    auditorUid: String(data.auditorUid),
+    auditorName: String(data.auditorName || '').trim(),
+    visitDate: data.visitDate || new Date().toISOString().slice(0, 10),
+    location: data.location || null,
+    findings: String(data.findings || '').trim(),
+    notes: String(data.notes || '').trim(),
+    recommendation: AUDIT_RECOMMENDATION.includes(data.recommendation)
+      ? data.recommendation
+      : 'pass',
+    status: AUDIT_STATUS.includes(data.status) ? data.status : 'submitted',
+    photoUrls: Array.isArray(data.photoUrls) ? data.photoUrls : [],
+    linkedCertId: data.linkedCertId || null,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp()
+  });
+  return ref.id;
+};
+
+export const updateAuditVisit = (visitId, data) =>
+  setDoc(
+    doc(db, 'auditVisits', visitId),
+    { ...data, updatedAt: serverTimestamp() },
+    { merge: true }
+  );
+
+export const deleteAuditVisit = (visitId) =>
+  deleteDoc(doc(db, 'auditVisits', visitId));
+
+export const getAuditVisit = async (visitId) => {
+  const snap = await getDoc(doc(db, 'auditVisits', visitId));
+  return snap.exists() ? { id: snap.id, ...snap.data() } : null;
+};
+
+export const subscribeAuditVisitsByOrg = (orgId, cb) => {
+  const q = query(
+    collection(db, 'auditVisits'),
+    where('orgId', '==', orgId),
+    orderBy('visitDate', 'desc')
+  );
+  return onSnapshot(q, (snap) =>
+    cb(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+  );
+};
+
+export const listAuditVisitsByFarm = async (farmUid, max = 6) => {
+  const q = query(
+    collection(db, 'auditVisits'),
+    where('farmUid', '==', farmUid),
+    orderBy('visitDate', 'desc'),
+    limit(max)
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+};
+
 // ---------- Programs & certifications ----------
 
 const programsCol = (orgId) => collection(orgDoc(orgId), 'programs');

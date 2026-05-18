@@ -183,6 +183,34 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // ---------- Audit visits ----------
+    // Recorded by org auditors / admins as the evidence trail behind
+    // a certification (or a failed inspection). Public-read so buyers
+    // can see WHY a farm is certified — that's the trust mechanism.
+    match /auditVisits/{visitId} {
+      allow read: if true;
+      allow create: if isSignedIn()
+        && request.resource.data.orgId is string
+        && request.resource.data.orgId.size() > 0
+        && request.resource.data.farmUid is string
+        && request.resource.data.auditorUid == request.auth.uid
+        && (
+          orgRole(request.resource.data.orgId) == 'admin' ||
+          orgRole(request.resource.data.orgId) == 'auditor'
+        );
+      allow update: if isSignedIn() && (
+        // The auditor who recorded it can update their own draft/submitted
+        (resource.data.auditorUid == request.auth.uid
+          && (orgRole(resource.data.orgId) == 'admin'
+              || orgRole(resource.data.orgId) == 'auditor'))
+        ||
+        // Or any admin of the issuing org
+        orgRole(resource.data.orgId) == 'admin'
+      );
+      allow delete: if (isSignedIn() && orgRole(resource.data.orgId) == 'admin')
+        || isPlatformAdmin();
+    }
+
     // ---------- Certifications ----------
     // Top-level collection so an auditor from a certifier org can write
     // without needing permissions on the farmer's /farms doc. Public-

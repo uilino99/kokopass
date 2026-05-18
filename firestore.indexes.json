@@ -113,6 +113,30 @@
       ]
     },
     {
+      "collectionGroup": "auditVisits",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "orgId", "order": "ASCENDING" },
+        { "fieldPath": "visitDate", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "auditVisits",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "farmUid", "order": "ASCENDING" },
+        { "fieldPath": "visitDate", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "auditVisits",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "auditorUid", "order": "ASCENDING" },
+        { "fieldPath": "visitDate", "order": "DESCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "pendingInvites",
       "queryScope": "COLLECTION",
       "fields": [

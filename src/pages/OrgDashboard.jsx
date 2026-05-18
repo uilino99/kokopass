@@ -140,6 +140,11 @@ export default function OrgDashboard() {
                 Certifications
               </Link>
             )}
+            {(isAdmin || myRole === 'auditor') && (
+              <Link to={`/org/${orgId}/visits`} className="btn-secondary">
+                Audit visits
+              </Link>
+            )}
             {isAdmin && (
               <Link to={`/org/${orgId}/programs`} className="btn-secondary">
                 Programs
