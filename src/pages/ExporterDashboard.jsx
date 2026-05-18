@@ -7,7 +7,9 @@ import {
   subscribeInquiriesForTarget,
   updateInquiry
 } from '../utils/firestore.js';
+import { fmtCsvDate } from '../utils/csv.js';
 import { Skeleton, SkeletonCard } from '../components/Skeleton.jsx';
+import ExportCsvButton from '../components/ExportCsvButton.jsx';
 
 export default function ExporterDashboard() {
   const { user, profile } = useAuth();
@@ -69,6 +71,37 @@ export default function ExporterDashboard() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <ExportCsvButton
+            rows={shipments}
+            filename={`kokopass-shipments-${new Date().toISOString().slice(0, 10)}.csv`}
+            label="Export shipments"
+            columns={[
+              { header: 'shipmentId', field: 'id' },
+              { header: 'destination', field: 'destination' },
+              { header: 'buyerName', field: 'buyerName' },
+              { header: 'vessel', field: 'vessel' },
+              { header: 'departureDate', field: 'departureDate' },
+              { header: 'totalKg', field: 'totalKg' },
+              {
+                header: 'batchCount',
+                value: (s) => s.batchIds?.length || 0
+              },
+              { header: 'farmsCount', field: 'farmsCount' },
+              { header: 'status', field: 'status' },
+              { header: 'notes', field: 'notes' },
+              {
+                header: 'verifyUrl',
+                value: (s) =>
+                  typeof window !== 'undefined'
+                    ? `${window.location.origin}/verify/${s.id}`
+                    : ''
+              },
+              {
+                header: 'createdAt',
+                value: (s) => fmtCsvDate(s.createdAt)
+              }
+            ]}
+          />
           <Link to="/exporter/profile" className="btn-secondary">Edit profile</Link>
           <Link to="/exporter/shipments/new" className="btn-accent">+ New shipment</Link>
         </div>

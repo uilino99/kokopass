@@ -45,6 +45,82 @@ export function parseCsv(input) {
  * header, that row is treated as the header; otherwise we fall back to
  * positional mapping in `headers` order.
  */
+/**
+ * Render `rows` as a CSV string using `columns` to control header
+ * labels and per-field value extraction.
+ *
+ *   const csv = toCsv(myRows, [
+ *     { header: 'Name', value: r => r.fullName },
+ *     { header: 'Created', value: r => fmtDate(r.createdAt) }
+ *   ]);
+ *
+ * Escapes fields containing commas, quotes or newlines per RFC 4180.
+ * Returns an empty string if either `rows` or `columns` is empty.
+ */
+export function toCsv(rows, columns) {
+  if (!Array.isArray(rows) || !Array.isArray(columns) || columns.length === 0) {
+    return '';
+  }
+  const esc = (v) => {
+    if (v == null) return '';
+    let s = typeof v === 'string' ? v : String(v);
+    s = s.replace(/\r?\n/g, ' ').trim();
+    if (s.includes(',') || s.includes('"') || s.includes('\n')) {
+      s = `"${s.replace(/"/g, '""')}"`;
+    }
+    return s;
+  };
+  const lines = [columns.map((c) => esc(c.header)).join(',')];
+  for (const row of rows) {
+    lines.push(
+      columns
+        .map((c) => {
+          try {
+            return esc(c.value ? c.value(row) : row?.[c.field] ?? '');
+          } catch {
+            return '';
+          }
+        })
+        .join(',')
+    );
+  }
+  // Excel-safe BOM so non-ASCII (Samoan names with apostrophes etc.)
+  // opens correctly.
+  return '﻿' + lines.join('\n');
+}
+
+/**
+ * Browser-only: serialize a CSV string into a Blob and trigger a
+ * download. Caller picks the filename.
+ */
+export function downloadCsv(filename, csv) {
+  if (typeof document === 'undefined') return;
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+/**
+ * Format a Firestore Timestamp / Date / iso-ish value for CSV. Returns
+ * '' when missing. Defaults to ISO so spreadsheets sort correctly.
+ */
+export function fmtCsvDate(ts) {
+  if (!ts) return '';
+  try {
+    const d = ts.toDate ? ts.toDate() : new Date(ts);
+    if (Number.isNaN(d.getTime())) return '';
+    return d.toISOString();
+  } catch {
+    return '';
+  }
+}
+
 export function csvToRecords(rows, headers) {
   if (rows.length === 0) return [];
   const lower = (s) => String(s || '').trim().toLowerCase();

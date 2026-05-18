@@ -6,7 +6,9 @@ import {
   getScanCounts,
   subscribeBatchesByOwner
 } from '../utils/firestore.js';
+import { fmtCsvDate } from '../utils/csv.js';
 import { Skeleton, SkeletonCard } from '../components/Skeleton.jsx';
+import ExportCsvButton from '../components/ExportCsvButton.jsx';
 
 export default function FarmerDashboard() {
   const { user, profile } = useAuth();
@@ -75,6 +77,40 @@ export default function FarmerDashboard() {
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
+          <ExportCsvButton
+            rows={batches}
+            filename={`kokopass-batches-${new Date().toISOString().slice(0, 10)}.csv`}
+            label="Export batches"
+            columns={[
+              { header: 'batchId', field: 'id' },
+              { header: 'farmName', field: 'farmName' },
+              { header: 'village', field: 'village' },
+              {
+                header: 'harvestDate',
+                field: 'harvestDate'
+              },
+              { header: 'weightKg', field: 'weightKg' },
+              { header: 'quality', field: 'quality' },
+              { header: 'processing', field: 'processing' },
+              { header: 'moisturePct', field: 'moisturePct' },
+              { header: 'notes', field: 'notes' },
+              {
+                header: 'scanCount',
+                value: (b) => scanCounts[b.id] || 0
+              },
+              {
+                header: 'verifyUrl',
+                value: (b) =>
+                  typeof window !== 'undefined'
+                    ? `${window.location.origin}/verify/${b.id}`
+                    : ''
+              },
+              {
+                header: 'createdAt',
+                value: (b) => fmtCsvDate(b.createdAt)
+              }
+            ]}
+          />
           <Link to="/batches/print" className="btn-secondary">🖨 Print labels</Link>
           <Link to="/farm" className="btn-secondary">
             {farm ? 'Edit farm' : 'Set up farm'}

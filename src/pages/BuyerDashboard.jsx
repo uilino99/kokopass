@@ -2,8 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.js';
 import { subscribeScansByOwner, updateScan } from '../utils/firestore.js';
+import { fmtCsvDate } from '../utils/csv.js';
 import { useToast } from '../components/Toast.jsx';
 import { Skeleton, SkeletonCard } from '../components/Skeleton.jsx';
+import ExportCsvButton from '../components/ExportCsvButton.jsx';
 import Spinner from '../components/Spinner.jsx';
 
 const KIND_OPTIONS = [
@@ -104,7 +106,54 @@ export default function BuyerDashboard() {
             Every QR you scan is saved here — your verified single-origin portfolio.
           </p>
         </div>
-        <Link to="/buyer/scan" className="btn-accent">+ Scan a pass</Link>
+        <div className="flex flex-wrap gap-2">
+          <ExportCsvButton
+            rows={scans}
+            filename={`kokopass-portfolio-${new Date().toISOString().slice(0, 10)}.csv`}
+            label="Export portfolio"
+            columns={[
+              { header: 'scanId', field: 'id' },
+              { header: 'refKind', field: 'refKind' },
+              { header: 'refId', field: 'refId' },
+              {
+                header: 'farmOrDestination',
+                value: (s) =>
+                  s.refKind === 'shipment'
+                    ? s.summary?.destination || ''
+                    : s.summary?.farmName || ''
+              },
+              {
+                header: 'village',
+                value: (s) => s.summary?.village || ''
+              },
+              {
+                header: 'kg',
+                value: (s) =>
+                  s.refKind === 'shipment'
+                    ? s.summary?.totalKg ?? ''
+                    : s.summary?.weightKg ?? ''
+              },
+              {
+                header: 'quality',
+                value: (s) => s.summary?.quality || ''
+              },
+              {
+                header: 'harvestDate',
+                value: (s) => s.summary?.harvestDate || ''
+              },
+              { header: 'note', field: 'note' },
+              {
+                header: 'tags',
+                value: (s) => (s.tags || []).join('|')
+              },
+              {
+                header: 'scannedAt',
+                value: (s) => fmtCsvDate(s.scannedAt)
+              }
+            ]}
+          />
+          <Link to="/buyer/scan" className="btn-accent">+ Scan a pass</Link>
+        </div>
       </header>
 
       <div className="grid gap-5 sm:grid-cols-4">

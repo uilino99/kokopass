@@ -13,6 +13,8 @@ import {
   updateCertification
 } from '../utils/firestore.js';
 import CertBadge from '../components/CertBadge.jsx';
+import ExportCsvButton from '../components/ExportCsvButton.jsx';
+import { fmtCsvDate } from '../utils/csv.js';
 import Spinner, { FullPageSpinner } from '../components/Spinner.jsx';
 
 const STATUS_FILTERS = [
@@ -327,6 +329,31 @@ export default function OrgCertifications() {
           <h2 className="font-display text-2xl text-koko-ink sm:text-3xl">
             {certs.length} issued
           </h2>
+          <div className="flex flex-wrap gap-2">
+          <ExportCsvButton
+            rows={filtered}
+            filename={`kokopass-certs-${org?.name || 'org'}-${new Date().toISOString().slice(0, 10)}.csv`}
+            label="Export"
+            className="btn-secondary !min-h-[36px] !py-1.5"
+            columns={[
+              { header: 'certId', field: 'id' },
+              { header: 'programName', field: 'programName' },
+              { header: 'farmUid', field: 'farmUid' },
+              { header: 'farmName', field: 'farmNameHint' },
+              { header: 'status', field: 'status' },
+              { header: 'notes', field: 'notes' },
+              { header: 'auditedBy', field: 'auditedBy' },
+              { header: 'auditedByName', field: 'auditedByName' },
+              {
+                header: 'issuedAt',
+                value: (c) => fmtCsvDate(c.issuedAt)
+              },
+              {
+                header: 'expiresAt',
+                value: (c) => fmtCsvDate(c.expiresAt)
+              }
+            ]}
+          />
           <select
             className="input !min-h-[36px] !py-1.5 !w-auto"
             value={statusFilter}
@@ -338,6 +365,7 @@ export default function OrgCertifications() {
               </option>
             ))}
           </select>
+          </div>
         </div>
 
         {filtered.length === 0 ? (

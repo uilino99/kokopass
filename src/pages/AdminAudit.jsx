@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { fetchAuditLogs } from '../utils/firestore.js';
+import { fmtCsvDate } from '../utils/csv.js';
 import { Skeleton } from '../components/Skeleton.jsx';
 import AdminNav from '../components/AdminNav.jsx';
 import AdminGate from '../components/AdminGate.jsx';
+import ExportCsvButton from '../components/ExportCsvButton.jsx';
 import { AuditRow } from './AdminDashboard.jsx';
 
 const FACETS = [
@@ -135,6 +137,22 @@ export default function AdminAudit() {
             <button type="button" onClick={load} className="btn-accent">
               Run query
             </button>
+            <ExportCsvButton
+              rows={rows || []}
+              filename={`kokopass-audit-${new Date().toISOString().slice(0, 10)}.csv`}
+              columns={[
+                { header: 'when', value: (r) => fmtCsvDate(r.at) },
+                { header: 'action', field: 'action' },
+                { header: 'collection', field: 'collection' },
+                { header: 'docId', field: 'docId' },
+                { header: 'actorUid', field: 'actorUid' },
+                { header: 'orgId', field: 'orgId' },
+                {
+                  header: 'changedFields',
+                  value: (r) => (r.diff || []).join('|')
+                }
+              ]}
+            />
           </div>
           {error && (
             <p className="error-text mt-3" role="alert">

@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.js';
 import { subscribeEnrollmentsByEnroller } from '../utils/firestore.js';
+import { fmtCsvDate } from '../utils/csv.js';
 import { Skeleton, SkeletonCard } from '../components/Skeleton.jsx';
+import ExportCsvButton from '../components/ExportCsvButton.jsx';
 
 const PILOT_TARGET = 1000;
 
@@ -39,6 +41,38 @@ export default function EnrollerDashboard() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <ExportCsvButton
+            rows={rows}
+            filename={`kokopass-enrollments-${new Date().toISOString().slice(0, 10)}.csv`}
+            columns={[
+              { header: 'fullName', field: 'fullName' },
+              { header: 'phone', field: 'phone' },
+              { header: 'email', field: 'email' },
+              { header: 'village', field: 'village' },
+              { header: 'district', field: 'district' },
+              { header: 'crop', field: 'crop' },
+              { header: 'variety', field: 'variety' },
+              { header: 'sizeHectares', field: 'sizeHectares' },
+              { header: 'claimCode', field: 'claimCode' },
+              {
+                header: 'claimed',
+                value: (r) => (r.claimed ? 'yes' : 'no')
+              },
+              { header: 'claimedUid', field: 'claimedUid' },
+              {
+                header: 'lat',
+                value: (r) => r.location?.lat ?? ''
+              },
+              {
+                header: 'lng',
+                value: (r) => r.location?.lng ?? ''
+              },
+              {
+                header: 'createdAt',
+                value: (r) => fmtCsvDate(r.createdAt)
+              }
+            ]}
+          />
           <Link to="/enroll/print" className="btn-secondary">🖨 Print cards</Link>
           <Link to="/enroll/bulk" className="btn-secondary">↑ Bulk paste CSV</Link>
           <Link to="/enroll/new" className="btn-accent">+ New farmer</Link>
