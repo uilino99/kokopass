@@ -292,7 +292,8 @@ export default function FarmerPublic() {
                     ? 'badge-error'
                     : 'badge-warning';
               return (
-                <li key={v.id} className="card">
+                <li key={v.id}>
+                  <Link to={`/visit/${v.id}`} className="card-hover block">
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
                     <div className="flex flex-wrap items-baseline gap-2">
                       <span className={tone}>
@@ -314,17 +315,17 @@ export default function FarmerPublic() {
                   {v.photoUrls?.length > 0 && (
                     <div className="mt-3 flex gap-1.5">
                       {v.photoUrls.slice(0, 3).map((url) => (
-                        <a key={url} href={url} target="_blank" rel="noreferrer">
-                          <img
-                            src={url}
-                            alt=""
-                            className="h-12 w-12 rounded-md border border-koko-border object-cover"
-                            loading="lazy"
-                          />
-                        </a>
+                        <img
+                          key={url}
+                          src={url}
+                          alt=""
+                          className="h-12 w-12 rounded-md border border-koko-border object-cover"
+                          loading="lazy"
+                        />
                       ))}
                     </div>
                   )}
+                  </Link>
                 </li>
               );
             })}

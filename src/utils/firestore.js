@@ -1014,6 +1014,11 @@ export const updateCertification = (certId, data) =>
 export const deleteCertification = (certId) =>
   deleteDoc(doc(db, 'certifications', certId));
 
+export const getCertification = async (certId) => {
+  const snap = await getDoc(doc(db, 'certifications', certId));
+  return snap.exists() ? { id: snap.id, ...snap.data() } : null;
+};
+
 export const subscribeCertsByFarm = (farmUid, cb) => {
   const q = query(
     collection(db, 'certifications'),

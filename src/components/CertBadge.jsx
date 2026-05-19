@@ -1,7 +1,12 @@
+import { Link } from 'react-router-dom';
+
 /**
  * Visual badge for a certification. Renders the program logo (or a
  * letter fallback), the program name, the issuing org, and a status
  * pill. Used on /farmers/:uid and /verify/:batchId.
+ *
+ * Wraps in a Link to /cert/:certId when an id is present, so each
+ * badge becomes a shareable deep-link to the full cert record.
  */
 
 const STATUS_TONE = {
@@ -36,10 +41,23 @@ export default function CertBadge({ cert }) {
   const tone = STATUS_TONE[status] || STATUS_TONE.verified;
   const initial = (cert.programName || cert.orgName || '?').slice(0, 1).toUpperCase();
 
+  const Wrap = cert.id
+    ? ({ children }) => (
+        <Link
+          to={`/cert/${cert.id}`}
+          className={`inline-flex items-center gap-3 rounded-xl border px-3 py-2 transition hover:shadow-sm ${tone}`}
+        >
+          {children}
+        </Link>
+      )
+    : ({ children }) => (
+        <article className={`inline-flex items-center gap-3 rounded-xl border px-3 py-2 ${tone}`}>
+          {children}
+        </article>
+      );
+
   return (
-    <article
-      className={`inline-flex items-center gap-3 rounded-xl border px-3 py-2 ${tone}`}
-    >
+    <Wrap>
       <div className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-lg bg-white">
         {cert.logoUrl ? (
           <img src={cert.logoUrl} alt="" className="h-full w-full object-cover" />
@@ -60,7 +78,7 @@ export default function CertBadge({ cert }) {
           </div>
         )}
       </div>
-    </article>
+    </Wrap>
   );
 }
 
