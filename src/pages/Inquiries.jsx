@@ -42,7 +42,17 @@ export default function Inquiries() {
     let out = rows.filter((r) => {
       if (status !== 'all' && (r.status || 'new') !== status) return false;
       if (!q) return true;
-      const haystack = [r.name, r.email, r.phone, r.company, r.message]
+      const haystack = [
+        r.name,
+        r.email,
+        r.phone,
+        r.company,
+        r.message,
+        r.variety,
+        r.destination,
+        r.qualityGrade,
+        r.currency
+      ]
         .filter(Boolean)
         .join(' ')
         .toLowerCase();
@@ -168,6 +178,9 @@ export default function Inquiries() {
               } ${q.status === 'archived' ? 'opacity-70' : ''}`}
             >
               <div className="flex flex-wrap items-baseline gap-2">
+                {q.kind === 'order' && (
+                  <span className="badge-teal mr-1">RFQ</span>
+                )}
                 <span className="font-semibold text-koko-ink">{q.name}</span>
                 {q.company && (
                   <span className="text-sm text-koko-muted">· {q.company}</span>
@@ -179,6 +192,11 @@ export default function Inquiries() {
                   {fmtTime(q.createdAt)}
                 </span>
               </div>
+
+              {q.kind === 'order' && (
+                <RfqSummary q={q} />
+              )}
+
               <p className="mt-2 whitespace-pre-line text-sm text-koko-body">
                 {q.message}
               </p>
@@ -250,6 +268,41 @@ export default function Inquiries() {
         </ul>
       )}
     </div>
+  );
+}
+
+function RfqSummary({ q }) {
+  const items = [
+    q.quantityKg != null && {
+      label: 'Quantity',
+      value: `${Number(q.quantityKg).toLocaleString()} kg`
+    },
+    q.qualityGrade && {
+      label: 'Grade',
+      value: q.qualityGrade === 'any' ? 'Any' : `Grade ${q.qualityGrade}`
+    },
+    q.variety && { label: 'Variety', value: q.variety },
+    q.targetPrice != null && {
+      label: 'Target',
+      value: `${q.currency || 'USD'} ${Number(q.targetPrice).toFixed(2)}/kg`
+    },
+    q.deliveryDate && { label: 'Deliver by', value: q.deliveryDate },
+    q.destination && { label: 'To', value: q.destination }
+  ].filter(Boolean);
+
+  if (items.length === 0) return null;
+
+  return (
+    <dl className="mt-3 grid grid-cols-2 gap-3 rounded-xl border border-koko-teal/30 bg-koko-teal100/30 p-3 text-xs sm:grid-cols-3">
+      {items.map((it) => (
+        <div key={it.label}>
+          <dt className="text-2xs uppercase tracking-widest text-koko-muted">
+            {it.label}
+          </dt>
+          <dd className="mt-0.5 font-medium text-koko-ink">{it.value}</dd>
+        </div>
+      ))}
+    </dl>
   );
 }
 

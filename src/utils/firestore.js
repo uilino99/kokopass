@@ -187,15 +187,30 @@ export const listExportsByOwner = async (ownerUid, max = 12) => {
 // ---------- Inquiries (lead capture on /exporters/<uid>) ----------
 
 export const createInquiry = async (input) => {
+  const kind = input?.kind === 'order' ? 'order' : 'inquiry';
   const ref = await addDoc(collection(db, 'inquiries'), {
     targetUid: String(input.targetUid),
     targetKind: input.targetKind || 'exporter',
+    kind,
     name: String(input.name || '').trim(),
     email: String(input.email || '').trim(),
     phone: String(input.phone || '').trim(),
     company: String(input.company || '').trim(),
     message: String(input.message || '').trim(),
     shipmentId: input.shipmentId || null,
+    // Structured RFQ fields. All optional; populated only when kind='order'.
+    quantityKg: Number(input.quantityKg) > 0 ? Number(input.quantityKg) : null,
+    qualityGrade: ['A', 'B', 'C', 'any'].includes(input.qualityGrade)
+      ? input.qualityGrade
+      : null,
+    variety: String(input.variety || '').trim() || null,
+    targetPrice:
+      Number(input.targetPrice) > 0 ? Number(input.targetPrice) : null,
+    currency: ['USD', 'EUR', 'NZD', 'AUD', 'WST', 'JPY', 'GBP'].includes(input.currency)
+      ? input.currency
+      : null,
+    deliveryDate: input.deliveryDate || null,
+    destination: String(input.destination || '').trim() || null,
     status: 'new',
     createdAt: serverTimestamp()
   });

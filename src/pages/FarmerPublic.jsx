@@ -10,6 +10,7 @@ import {
 import { FullPageSpinner } from '../components/Spinner.jsx';
 import BoundaryPicker from '../components/BoundaryPicker.jsx';
 import { CertBadgeRow } from '../components/CertBadge.jsx';
+import InquiryForm from '../components/InquiryForm.jsx';
 import Seo from '../components/Seo.jsx';
 
 export default function FarmerPublic() {
@@ -273,6 +274,14 @@ export default function FarmerPublic() {
             ))}
           </ul>
         )}
+      </section>
+
+      <section className="animate-slide-up">
+        <InquiryForm
+          targetUid={uid}
+          targetName={farmerName || farm.farmName}
+          targetKind="farmer"
+        />
       </section>
 
       {audits.length > 0 && (

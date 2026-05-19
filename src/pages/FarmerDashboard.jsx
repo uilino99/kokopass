@@ -4,7 +4,8 @@ import { useAuth } from '../hooks/useAuth.js';
 import {
   getFarm,
   getScanCounts,
-  subscribeBatchesByOwner
+  subscribeBatchesByOwner,
+  subscribeInquiriesForTarget
 } from '../utils/firestore.js';
 import { fmtCsvDate } from '../utils/csv.js';
 import { Skeleton, SkeletonCard } from '../components/Skeleton.jsx';
@@ -18,6 +19,7 @@ export default function FarmerDashboard() {
   const [batches, setBatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [scanCounts, setScanCounts] = useState({});
+  const [inquiries, setInquiries] = useState([]);
 
   useEffect(() => {
     let active = true;
@@ -51,8 +53,18 @@ export default function FarmerDashboard() {
     };
   }, [batches]);
 
+  useEffect(() => {
+    if (!user?.uid) return;
+    const unsub = subscribeInquiriesForTarget(user.uid, (rows) => {
+      setInquiries(rows);
+    });
+    return unsub;
+  }, [user?.uid]);
+
   const totalKg = batches.reduce((acc, b) => acc + (Number(b.weightKg) || 0), 0);
   const totalScans = Object.values(scanCounts).reduce((a, n) => a + (n || 0), 0);
+  const unreadInquiries = inquiries.filter((q) => (q.status || 'new') === 'new').length;
+  const rfqInquiries = inquiries.filter((q) => q.kind === 'order').length;
   const firstName = profile?.fullName?.split(' ')[0] || 'friend';
 
   return (
@@ -147,6 +159,74 @@ export default function FarmerDashboard() {
           }
         />
       </div>
+
+      {inquiries.length > 0 && (
+        <section>
+          <div className="mb-3 flex items-end justify-between">
+            <div>
+              <p className="eyebrow">Inbox</p>
+              <h2 className="mt-1 font-display text-2xl text-koko-ink sm:text-3xl">
+                Buyer inquiries
+                {unreadInquiries > 0 && (
+                  <span className="ml-2 align-middle">
+                    <span className="badge-error">{unreadInquiries} new</span>
+                  </span>
+                )}
+                {rfqInquiries > 0 && (
+                  <span className="ml-1 align-middle">
+                    <span className="badge-teal">{rfqInquiries} RFQ</span>
+                  </span>
+                )}
+              </h2>
+            </div>
+          </div>
+          <ul className="grid gap-3 sm:grid-cols-2">
+            {inquiries.slice(0, 4).map((q) => (
+              <li
+                key={q.id}
+                className={`card ${
+                  q.status === 'new' ? 'border-koko-teal/40 bg-koko-teal100/30' : ''
+                }`}
+              >
+                <div className="flex flex-wrap items-baseline gap-2">
+                  {q.kind === 'order' && (
+                    <span className="badge-teal mr-1">RFQ</span>
+                  )}
+                  <span className="font-medium text-koko-ink">{q.name}</span>
+                  {q.company && (
+                    <span className="text-xs text-koko-muted">· {q.company}</span>
+                  )}
+                </div>
+                {q.kind === 'order' && (
+                  <p className="mt-2 text-xs text-koko-body">
+                    {q.quantityKg ? `${q.quantityKg} kg` : ''}
+                    {q.qualityGrade && q.qualityGrade !== 'any'
+                      ? ` · Grade ${q.qualityGrade}`
+                      : ''}
+                    {q.targetPrice
+                      ? ` · ${q.currency || 'USD'} ${Number(q.targetPrice).toFixed(2)}/kg`
+                      : ''}
+                    {q.deliveryDate ? ` · by ${q.deliveryDate}` : ''}
+                  </p>
+                )}
+                <p className="mt-2 line-clamp-2 text-sm text-koko-body">
+                  {q.message}
+                </p>
+                {q.email && (
+                  <a
+                    href={`mailto:${q.email}?subject=Re: your KokoPass ${
+                      q.kind === 'order' ? 'RFQ' : 'inquiry'
+                    }`}
+                    className="mt-2 inline-block text-xs text-koko-teal hover:underline"
+                  >
+                    ✉ Reply to {q.email}
+                  </a>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <section>
         <div className="mb-5 flex items-end justify-between">
