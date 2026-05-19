@@ -996,6 +996,8 @@ export const createCertification = async (data) => {
     notes: String(data.notes || '').trim(),
     auditedBy: data.auditedBy || null,
     auditedByName: String(data.auditedByName || '').trim(),
+    linkedVisitId: data.linkedVisitId || null,
+    linkedVisitDate: data.linkedVisitDate || null,
     issuedAt,
     expiresAt: data.expiresAt || null
   });

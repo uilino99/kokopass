@@ -8,6 +8,7 @@ import {
   deleteCertification,
   getFarm,
   getOrganization,
+  listAuditVisitsByFarm,
   listOrgPrograms,
   subscribeCertsByOrg,
   updateCertification
@@ -40,10 +41,12 @@ export default function OrgCertifications() {
     farmUid: '',
     programId: '',
     notes: '',
-    status: 'verified'
+    status: 'verified',
+    linkedVisitId: ''
   });
   const [lookingUp, setLookingUp] = useState(false);
   const [farmHint, setFarmHint] = useState(null);
+  const [farmVisits, setFarmVisits] = useState([]);
   const [busy, setBusy] = useState(false);
   const [statusFilter, setStatusFilter] = useState('all');
 
@@ -103,14 +106,22 @@ export default function OrgCertifications() {
     const uid = form.farmUid.trim();
     if (!uid) {
       setFarmHint(null);
+      setFarmVisits([]);
       return;
     }
     setLookingUp(true);
     try {
-      const f = await getFarm(uid);
+      const [f, visits] = await Promise.all([
+        getFarm(uid),
+        listAuditVisitsByFarm(uid, 10).catch(() => [])
+      ]);
       setFarmHint(f ? { found: true, name: f.farmName, village: f.village } : { found: false });
+      // Only show visits from THIS org so an auditor can't link a cert
+      // to another org's audit record.
+      setFarmVisits(visits.filter((v) => v.orgId === orgId));
     } catch {
       setFarmHint({ found: false });
+      setFarmVisits([]);
     } finally {
       setLookingUp(false);
     }
@@ -130,6 +141,9 @@ export default function OrgCertifications() {
         d.setMonth(d.getMonth() + months);
         return d;
       })();
+      const linkedVisit = form.linkedVisitId
+        ? farmVisits.find((v) => v.id === form.linkedVisitId)
+        : null;
       await createCertification({
         orgId,
         orgName: org.name,
@@ -142,11 +156,20 @@ export default function OrgCertifications() {
         notes: form.notes.trim(),
         auditedBy: user.uid,
         auditedByName: profile?.fullName || '',
+        linkedVisitId: linkedVisit?.id || null,
+        linkedVisitDate: linkedVisit?.visitDate || null,
         expiresAt
       });
       toast.success(`Certification issued: ${program.name}`);
-      setForm({ farmUid: '', programId: program.id, notes: '', status: 'verified' });
+      setForm({
+        farmUid: '',
+        programId: program.id,
+        notes: '',
+        status: 'verified',
+        linkedVisitId: ''
+      });
       setFarmHint(null);
+      setFarmVisits([]);
     } catch (err) {
       toast.error(err.message || 'Could not issue.');
     } finally {
@@ -304,6 +327,43 @@ export default function OrgCertifications() {
                 <option value="verified">Verified</option>
                 <option value="pending">Pending audit</option>
               </select>
+            </div>
+            <div>
+              <label className="label" htmlFor="c-visit">Backed by audit visit</label>
+              <select
+                id="c-visit"
+                className="input"
+                value={form.linkedVisitId}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, linkedVisitId: e.target.value }))
+                }
+                disabled={farmVisits.length === 0}
+              >
+                <option value="">
+                  {farmVisits.length === 0
+                    ? farmHint?.found
+                      ? '— no visits at this farm yet —'
+                      : '— look up a farm first —'
+                    : '— none / not tied to a visit —'}
+                </option>
+                {farmVisits.map((v) => (
+                  <option key={v.id} value={v.id}>
+                    {v.visitDate} · {v.recommendation || 'pass'}
+                    {v.auditorName ? ` · ${v.auditorName}` : ''}
+                  </option>
+                ))}
+              </select>
+              {farmHint?.found && farmVisits.length === 0 && (
+                <p className="helper">
+                  No prior visits at this farm from your org.{' '}
+                  <Link
+                    to={`/org/${orgId}/visits/new`}
+                    className="text-koko-teal hover:underline"
+                  >
+                    Log one →
+                  </Link>
+                </p>
+              )}
             </div>
           </div>
           <div>

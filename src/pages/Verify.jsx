@@ -58,6 +58,42 @@ export default function Verify() {
     let active = true;
     let unsubBatch = null;
 
+    // Demo short-circuit. Hardcoded sample data so the "Try a sample QR"
+    // CTA on Landing always renders the full verify spread without
+    // touching Firestore or needing the platform to be seeded.
+    if (id === 'sample') {
+      const today = new Date();
+      const harvest = new Date(today);
+      harvest.setDate(today.getDate() - 28);
+      setKind('batch');
+      setData({
+        id: 'sample',
+        farmId: 'sample-farm',
+        farmName: 'Lalomanu Family Farm',
+        village: 'Lalomanu',
+        district: 'Aleipata',
+        crop: 'Cacao',
+        variety: 'Trinitario',
+        harvestDate: harvest.toISOString().slice(0, 10),
+        weightKg: 42,
+        quality: 'A',
+        processing: 'Fermented',
+        moisturePct: 7.2,
+        farmerName: 'Sina Tagaloa',
+        farmerAvatarUrl: null,
+        farmHeroUrl: null,
+        farmStory:
+          'Our family has grown cacao on these slopes for three generations. The trade winds dry our beans on raised mats facing the sea — flavour comes from the salt air.',
+        photoUrls: [],
+        notes: '',
+        _isSample: true
+      });
+      setLoading(false);
+      return () => {
+        active = false;
+      };
+    }
+
     (async () => {
       const batch = await getBatch(id);
       if (!active) return;
@@ -97,6 +133,7 @@ export default function Verify() {
   useEffect(() => {
     if (!user || profile?.role !== 'buyer') return;
     if (!data || !kind || kind === 'missing') return;
+    if (data._isSample) return; // never log the demo into a real portfolio
     if (recordedRef.current === data.id) return;
     recordedRef.current = data.id;
 
@@ -192,6 +229,14 @@ function BatchView({ batch, saved, certs = [], scanCount = 0 }) {
     <div className="mx-auto max-w-3xl space-y-8 page">
       <Seo title={seoTitle} description={seoDesc} image={seoImage} kind="article" />
       <div className="flex flex-wrap items-center justify-center gap-2">
+        {batch._isSample && (
+          <div className="inline-flex items-center gap-2 rounded-full border border-koko-warning/40 bg-koko-warningBg px-3 py-2 text-xs font-semibold text-koko-warning">
+            <span className="grid h-4 w-4 place-items-center rounded-full bg-koko-warning text-[10px] text-white">
+              i
+            </span>
+            Sample batch · not a real farmer · for demo
+          </div>
+        )}
         <SavedPill saved={saved} />
         {scanCount > 0 && (
           <span

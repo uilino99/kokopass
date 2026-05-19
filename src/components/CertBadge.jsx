@@ -54,6 +54,11 @@ export default function CertBadge({ cert }) {
         <div className="text-2xs text-koko-muted">
           by {cert.orgName || 'Issuer'} · {STATUS_LABEL[status]}
         </div>
+        {cert.linkedVisitDate && (
+          <div className="text-2xs text-koko-muted">
+            Backed by audit · {cert.linkedVisitDate}
+          </div>
+        )}
       </div>
     </article>
   );

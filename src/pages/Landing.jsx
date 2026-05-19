@@ -105,6 +105,9 @@ export default function Landing() {
         <div className="mt-10 flex flex-wrap justify-center gap-3">
           <Link to="/register" className="btn-accent">Start tracing</Link>
           <Link to="/login" className="btn-secondary">Sign in</Link>
+          <Link to="/verify/sample" className="btn-ghost">
+            Try a sample QR →
+          </Link>
         </div>
         <LiveStats />
       </section>
