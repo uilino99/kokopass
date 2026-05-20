@@ -8,8 +8,9 @@
   html { scroll-behavior: smooth; }
   body {
     @apply bg-koko-bg text-koko-body font-sans antialiased;
-    font-feature-settings: 'cv11', 'ss01';
+    font-feature-settings: 'cv11', 'ss01', 'ss02';
     -webkit-tap-highlight-color: transparent;
+    text-rendering: optimizeLegibility;
   }
   body::before {
     content: '';
@@ -18,20 +19,32 @@
     pointer-events: none;
     z-index: -1;
     background:
-      radial-gradient(50% 35% at 80% 0%, rgba(29,158,117,0.06), transparent 70%),
-      radial-gradient(45% 30% at 0% 100%, rgba(0,51,102,0.07), transparent 70%);
+      radial-gradient(55% 40% at 85% -5%, rgba(29,158,117,0.09), transparent 70%),
+      radial-gradient(50% 35% at -5% 105%, rgba(0,51,102,0.09), transparent 70%),
+      radial-gradient(30% 25% at 50% 50%, rgba(255,255,255,0.5), transparent 70%);
   }
   h1, h2, h3, h4 {
     @apply font-display text-koko-ink;
     font-weight: 600;
+    text-wrap: balance;
   }
-  h1 { @apply text-4xl sm:text-6xl; }
+  h1 { @apply text-4xl sm:text-5xl lg:text-6xl; }
   h2 { @apply text-3xl sm:text-4xl; }
   h3 { @apply text-xl sm:text-2xl; }
-  ::selection { background: rgba(29,158,117,0.25); color: #0F1B2D; }
+  p { text-wrap: pretty; }
+  ::selection { background: rgba(29,158,117,0.28); color: #0F1B2D; }
 
   /* Visible focus everywhere — accessibility */
   :focus-visible {
+    outline: 2px solid rgba(29,158,117,0.55);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+  /* Component classes that supply their own focus ring opt out cleanly */
+  .btn:focus-visible,
+  .input:focus-visible,
+  textarea.input:focus-visible,
+  select.input:focus-visible {
     outline: none;
   }
   a, button, [role='button'] {
@@ -40,50 +53,74 @@
 
   /* Native form sanity */
   input, select, textarea, button { font: inherit; color: inherit; }
+
+  /* Tabular numerals for stat-like displays */
+  .font-display, .stat-num, dd { font-variant-numeric: tabular-nums; }
 }
 
 /* ---------- Components ---------- */
 @layer components {
   /* Buttons — 48px touch target, focus ring, press feedback */
   .btn {
-    @apply inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold tracking-tight transition-all duration-150 ease-out-quint
-           active:scale-[0.985] disabled:cursor-not-allowed disabled:opacity-60;
+    @apply relative inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold tracking-tight transition-all duration-200 ease-out-quint
+           active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none;
+    letter-spacing: -0.005em;
   }
   .btn-primary {
-    @apply btn bg-koko-navy text-white shadow-md hover:bg-koko-navy600 focus-visible:shadow-ringNavy;
+    @apply btn text-white shadow-button hover:-translate-y-px hover:shadow-buttonHover
+           focus-visible:shadow-ringNavy;
+    background-image: linear-gradient(135deg, #003366 0%, #1A4D80 100%);
+  }
+  .btn-primary:hover {
+    background-image: linear-gradient(135deg, #002A52 0%, #003366 100%);
   }
   .btn-accent {
-    @apply btn bg-koko-teal text-white shadow-md hover:bg-koko-teal600 focus-visible:shadow-ringTeal;
+    @apply btn text-white shadow-buttonAccent hover:-translate-y-px hover:shadow-buttonAccentHover
+           focus-visible:shadow-ringTeal;
+    background-image: linear-gradient(135deg, #1D9E75 0%, #2BB287 100%);
+  }
+  .btn-accent:hover {
+    background-image: linear-gradient(135deg, #0F6E56 0%, #1D9E75 100%);
   }
   .btn-secondary {
     @apply btn border border-koko-border bg-white text-koko-navy shadow-sm
-           hover:border-koko-navy hover:bg-koko-bg focus-visible:shadow-ringNavy;
+           hover:-translate-y-px hover:border-koko-navy/40 hover:bg-koko-surface2 hover:shadow-md
+           focus-visible:shadow-ringNavy;
   }
   .btn-ghost {
-    @apply btn min-h-[40px] !px-3 text-koko-body hover:bg-koko-borderSoft hover:text-koko-navy focus-visible:shadow-ringNavy;
+    @apply btn min-h-[40px] !px-3 text-koko-body shadow-none
+           hover:bg-koko-borderSoft hover:text-koko-navy
+           focus-visible:shadow-ringNavy active:scale-[0.98];
   }
   .btn-danger {
-    @apply btn bg-koko-error text-white shadow-md hover:bg-red-700 focus-visible:shadow-ringError;
+    @apply btn bg-koko-error text-white shadow-button
+           hover:-translate-y-px hover:bg-red-700 hover:shadow-md
+           focus-visible:shadow-ringError;
   }
 
   /* Inputs */
   .input {
     @apply block w-full rounded-xl border border-koko-border bg-white px-4 py-3 text-koko-ink placeholder:text-koko-faint
-           shadow-sm transition focus:border-koko-teal focus:outline-none focus:ring-4 focus:ring-koko-teal/15
-           disabled:cursor-not-allowed disabled:bg-koko-bg;
+           shadow-sm transition-all duration-150 ease-out-quint
+           hover:border-koko-navy/30
+           focus:border-koko-teal focus:outline-none focus:ring-[3px] focus:ring-koko-teal/20
+           disabled:cursor-not-allowed disabled:bg-koko-surface2 disabled:text-koko-muted;
     min-height: 48px;
   }
   .input-error {
-    @apply border-koko-error focus:border-koko-error focus:ring-koko-error/15;
+    @apply border-koko-error focus:border-koko-error focus:ring-koko-error/20;
   }
-  textarea.input { min-height: 96px; }
+  textarea.input { min-height: 96px; line-height: 1.55; }
+  select.input { cursor: pointer; }
 
   /* Labels & helper text */
   .label {
     @apply mb-1.5 block text-sm font-semibold text-koko-ink;
+    letter-spacing: -0.005em;
   }
   .helper {
     @apply mt-1.5 text-xs text-koko-muted;
+    line-height: 1.5;
   }
   .error-text {
     @apply mt-1.5 flex items-center gap-1 text-sm text-koko-error;
@@ -91,47 +128,63 @@
 
   /* Cards */
   .card {
-    @apply rounded-2xl border border-koko-border bg-white p-6 shadow-sm transition-shadow;
+    @apply rounded-2xl border border-koko-borderSoft bg-white p-5 shadow-card transition-all duration-200 ease-out-quint sm:p-6;
   }
   .card-elevated {
-    @apply card shadow-md;
+    @apply rounded-2xl border border-koko-borderSoft bg-white p-5 shadow-cardElevated transition-all duration-200 ease-out-quint sm:p-6;
+    background-image: linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(250,251,248,1) 100%);
   }
   .card-hover {
-    @apply card transition-all duration-200 ease-out-quint hover:-translate-y-0.5 hover:shadow-md;
+    @apply card cursor-pointer hover:-translate-y-0.5 hover:border-koko-teal/20 hover:shadow-cardHover;
   }
 
-  /* Eyebrow */
+  /* Eyebrow — branded section label with leading mark */
   .eyebrow {
-    @apply text-xs font-semibold uppercase tracking-widest text-koko-teal;
+    @apply inline-flex items-center gap-2 text-xs font-semibold uppercase text-koko-teal;
+    letter-spacing: 0.18em;
+  }
+  .eyebrow::before {
+    content: '';
+    display: inline-block;
+    width: 18px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, currentColor);
+    opacity: 0.8;
   }
 
   /* Badges */
   .badge {
-    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold;
+    @apply inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold;
+    letter-spacing: -0.005em;
   }
-  .badge-teal { @apply badge bg-koko-teal100 text-koko-teal600; }
-  .badge-navy { @apply badge bg-koko-infoBg text-koko-navy; }
-  .badge-success { @apply badge bg-koko-successBg text-koko-success; }
-  .badge-error { @apply badge bg-koko-errorBg text-koko-error; }
-  .badge-warning { @apply badge bg-koko-warningBg text-koko-warning; }
+  .badge-teal { @apply badge border-koko-teal/20 bg-koko-teal100 text-koko-teal600; }
+  .badge-navy { @apply badge border-koko-navy/15 bg-koko-infoBg text-koko-navy; }
+  .badge-success { @apply badge border-koko-success/20 bg-koko-successBg text-koko-success; }
+  .badge-error { @apply badge border-koko-error/20 bg-koko-errorBg text-koko-error; }
+  .badge-warning { @apply badge border-koko-warning/20 bg-koko-warningBg text-koko-warning; }
 
   /* Dividers */
   .divider {
     @apply my-6 h-px w-full bg-koko-border;
   }
   .divider-teal {
-    @apply mx-auto h-px w-16;
-    background: linear-gradient(90deg, transparent, #1D9E75, transparent);
+    @apply mx-auto w-20;
+    height: 2px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, transparent, #1D9E75 35%, #1D9E75 65%, transparent);
   }
 
   /* Toast */
   .toast {
-    @apply pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-xl border border-koko-border bg-white p-4 shadow-lg
+    @apply pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-2xl border border-koko-borderSoft p-4 shadow-xl
            animate-slide-in-right;
+    background: rgba(255,255,255,0.96);
+    backdrop-filter: saturate(140%) blur(8px);
+    -webkit-backdrop-filter: saturate(140%) blur(8px);
   }
-  .toast-success { @apply border-l-4 border-l-koko-success; }
-  .toast-error { @apply border-l-4 border-l-koko-error; }
-  .toast-info { @apply border-l-4 border-l-koko-navy; }
+  .toast-success { @apply border-l-[3px] border-l-koko-success; }
+  .toast-error { @apply border-l-[3px] border-l-koko-error; }
+  .toast-info { @apply border-l-[3px] border-l-koko-navy; }
 
   /* Skeleton */
   .skeleton {
@@ -142,8 +195,8 @@
     position: absolute;
     inset: 0;
     transform: translateX(-100%);
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
-    animation: shimmer 1.6s ease-in-out infinite;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.7), transparent);
+    animation: shimmer 1.8s ease-in-out infinite;
   }
 
   /* Spinner */
@@ -153,10 +206,16 @@
 
   /* Section helpers */
   .section { @apply space-y-12 sm:space-y-16; }
-  .container-app { @apply mx-auto w-full max-w-6xl px-5; }
+  .container-app { @apply mx-auto w-full max-w-6xl px-5 sm:px-6; }
 
   /* Page wrapper */
   .page { @apply animate-fade-in; }
+
+  /* Subtle hairline accent line — useful for header bottoms, etc. */
+  .hairline {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(0,51,102,0.12) 20%, rgba(29,158,117,0.18) 50%, rgba(0,51,102,0.12) 80%, transparent);
+  }
 }
 
 /* ---------- Misc ---------- */
@@ -164,7 +223,8 @@
   height: 280px;
   width: 100%;
   border-radius: 1rem;
-  border: 1px solid #E3E8EE;
+  border: 1px solid #EEF2F6;
+  box-shadow: 0 1px 2px 0 rgba(15,27,45,0.04);
   z-index: 0;
 }
 

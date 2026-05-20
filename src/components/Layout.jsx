@@ -44,13 +44,13 @@ export default function Layout({ children }) {
 
   return (
     <div className="min-h-full">
-      <header className="sticky top-0 z-30 border-b border-koko-border bg-white/85 backdrop-blur-md no-print">
+      <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md backdrop-saturate-150 no-print shadow-[0_1px_0_0_rgba(15,27,45,0.04)]">
         <div className="container-app flex h-16 items-center justify-between">
-          <Link to="/" className="group flex items-center gap-3">
-            <span className="grid h-9 w-9 place-items-center overflow-hidden rounded-xl shadow-sm transition group-hover:shadow-md">
+          <Link to="/" className="group flex items-center gap-3 outline-none">
+            <span className="grid h-9 w-9 place-items-center overflow-hidden rounded-xl shadow-sm ring-1 ring-koko-borderSoft transition-all duration-200 group-hover:shadow-md group-hover:ring-koko-teal/30">
               <img src="/icon.svg" alt="" className="h-9 w-9" />
             </span>
-            <span className="font-display text-xl font-semibold text-koko-ink">
+            <span className="font-display text-xl font-semibold text-koko-ink tracking-tight">
               Koko<span className="text-koko-teal">Pass</span>
             </span>
             <span className="badge-teal ml-1 hidden sm:inline-flex">Samoa</span>
@@ -182,6 +182,7 @@ export default function Layout({ children }) {
             <span className="badge-navy capitalize">{profile.role}</span>
           </div>
         )}
+        <div className="hairline" />
       </header>
 
       {devPreviewRole && (
@@ -203,8 +204,9 @@ export default function Layout({ children }) {
         {children}
       </main>
 
-      <footer className="hidden border-t border-koko-border bg-white py-8 text-center text-xs text-koko-muted md:block no-print">
+      <footer className="hidden bg-white/60 py-8 text-center text-xs text-koko-muted md:block no-print">
         <div className="container-app">
+          <div className="hairline mb-6" />
           © {new Date().getFullYear()} KokoPass · Crafted with care from Samoa 🇼🇸
         </div>
       </footer>

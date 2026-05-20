@@ -99,7 +99,7 @@ export default function BottomNav({ user, profile, onLogout }) {
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-30 border-t border-koko-border bg-white/95 backdrop-blur md:hidden no-print"
+      className="fixed inset-x-0 bottom-0 z-30 bg-white/90 backdrop-blur-md backdrop-saturate-150 md:hidden no-print shadow-[0_-1px_0_0_rgba(15,27,45,0.04),0_-8px_24px_-12px_rgba(15,27,45,0.10)]"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       aria-label="Primary"
     >
@@ -112,7 +112,11 @@ export default function BottomNav({ user, profile, onLogout }) {
           <Link
             to={fab.to}
             aria-label={fab.label}
-            className="-mt-6 grid h-14 w-14 place-items-center rounded-full bg-koko-teal text-white shadow-lg transition active:scale-95"
+            className="-mt-6 grid h-14 w-14 place-items-center rounded-full text-white transition-all duration-200 ease-out active:scale-95 hover:-translate-y-0.5 ring-4 ring-white"
+            style={{
+              backgroundImage: 'linear-gradient(135deg, #1D9E75 0%, #2BB287 100%)',
+              boxShadow: '0 10px 24px -10px rgba(29,158,117,0.55), inset 0 1px 0 rgba(255,255,255,0.25)'
+            }}
           >
             {ICONS.plus}
           </Link>
