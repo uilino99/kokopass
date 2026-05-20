@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.js';
 import { useToast } from '../components/Toast.jsx';
 import { getFarm } from '../utils/firestore.js';
@@ -14,7 +14,6 @@ import Spinner from '../components/Spinner.jsx';
 
 export default function AdminSeed() {
   const { user, profile, loading } = useAuth();
-  const navigate = useNavigate();
   const toast = useToast();
   const [busy, setBusy] = useState(null);
   const [farm, setFarm] = useState(null);

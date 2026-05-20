@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.js';
 import { useUserOrgs } from '../hooks/useUserOrgs.js';
 import { useToast } from '../components/Toast.jsx';
@@ -32,7 +32,6 @@ export default function OrgMembers() {
   const { orgId } = useParams();
   const { user } = useAuth();
   const { orgs } = useUserOrgs();
-  const navigate = useNavigate();
   const toast = useToast();
 
   const [org, setOrg] = useState(null);

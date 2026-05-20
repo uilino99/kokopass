@@ -100,14 +100,9 @@ export default function App() {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/org/:orgId"
-          element={
-            <ProtectedRoute>
-              <OrgDashboard />
-            </ProtectedRoute>
-          }
-        />
+        {/* Public — the org doc is public-read and the dashboard hides
+            management CTAs for non-members / anonymous viewers. */}
+        <Route path="/org/:orgId" element={<OrgDashboard />} />
         <Route
           path="/org/:orgId/members"
           element={

@@ -45,19 +45,20 @@ export default function OrgDashboard() {
   }, [orgId]);
 
   useEffect(() => {
-    // Membership doc reads require admin/self/platform-admin. Wrap the
-    // subscribe in a try-style guard: rule rejections surface as errors
-    // on the snapshot listener.
-    const unsub = subscribeOrgMembers(
-      orgId,
-      (rows) => {
-        setMembers(rows);
-        setMembersLoading(false);
-      }
-    );
-    // Firestore's onSnapshot can also fire an error callback; the
-    // current helper doesn't expose one, so we infer failure via a
-    // timeout if no data arrives. Cheap and works for the MVP case.
+    // Membership doc reads require admin / self / platform-admin.
+    // Anonymous viewers (or signed-in non-members) will be denied by
+    // rules — skip the subscription entirely for them rather than
+    // spinning for 5s before showing an error.
+    if (!user) {
+      setMembersLoading(false);
+      return;
+    }
+    const unsub = subscribeOrgMembers(orgId, (rows) => {
+      setMembers(rows);
+      setMembersLoading(false);
+    });
+    // Inferred-failure timeout: if no data arrives in 5s (rules
+    // rejection or otherwise), surface the friendly error card.
     const t = setTimeout(() => {
       setMembersLoading((cur) => {
         if (cur) setMembersError(true);
@@ -68,7 +69,7 @@ export default function OrgDashboard() {
       clearTimeout(t);
       unsub();
     };
-  }, [orgId]);
+  }, [orgId, user]);
 
   useEffect(() => {
     const unsubP = subscribeOrgPrograms(orgId, setPrograms);
@@ -197,6 +198,7 @@ export default function OrgDashboard() {
       </div>
 
       {/* Members preview */}
+      {user && (
       <section>
         <div className="mb-5 flex items-end justify-between">
           <div>
@@ -246,6 +248,7 @@ export default function OrgDashboard() {
           </ul>
         )}
       </section>
+      )}
     </div>
   );
 }

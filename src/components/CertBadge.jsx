@@ -41,23 +41,8 @@ export default function CertBadge({ cert }) {
   const tone = STATUS_TONE[status] || STATUS_TONE.verified;
   const initial = (cert.programName || cert.orgName || '?').slice(0, 1).toUpperCase();
 
-  const Wrap = cert.id
-    ? ({ children }) => (
-        <Link
-          to={`/cert/${cert.id}`}
-          className={`inline-flex items-center gap-3 rounded-xl border px-3 py-2 transition hover:shadow-sm ${tone}`}
-        >
-          {children}
-        </Link>
-      )
-    : ({ children }) => (
-        <article className={`inline-flex items-center gap-3 rounded-xl border px-3 py-2 ${tone}`}>
-          {children}
-        </article>
-      );
-
-  return (
-    <Wrap>
+  const inner = (
+    <>
       <div className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-lg bg-white">
         {cert.logoUrl ? (
           <img src={cert.logoUrl} alt="" className="h-full w-full object-cover" />
@@ -78,7 +63,23 @@ export default function CertBadge({ cert }) {
           </div>
         )}
       </div>
-    </Wrap>
+    </>
+  );
+
+  if (cert.id) {
+    return (
+      <Link
+        to={`/cert/${cert.id}`}
+        className={`inline-flex items-center gap-3 rounded-xl border px-3 py-2 transition hover:shadow-sm ${tone}`}
+      >
+        {inner}
+      </Link>
+    );
+  }
+  return (
+    <article className={`inline-flex items-center gap-3 rounded-xl border px-3 py-2 ${tone}`}>
+      {inner}
+    </article>
   );
 }
 

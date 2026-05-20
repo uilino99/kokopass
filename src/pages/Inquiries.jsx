@@ -6,7 +6,7 @@ import {
   subscribeInquiriesForTarget,
   updateInquiry
 } from '../utils/firestore.js';
-import { Skeleton, SkeletonCard } from '../components/Skeleton.jsx';
+import { SkeletonCard } from '../components/Skeleton.jsx';
 
 const STATUS_FILTERS = [
   { value: 'all', label: 'All' },
