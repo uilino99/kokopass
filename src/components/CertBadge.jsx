@@ -70,7 +70,7 @@ export default function CertBadge({ cert }) {
     return (
       <Link
         to={`/cert/${cert.id}`}
-        className={`inline-flex items-center gap-3 rounded-xl border px-3 py-2 transition hover:shadow-sm ${tone}`}
+        className={`inline-flex items-center gap-3 rounded-xl border px-3 py-2 shadow-sm transition-all duration-200 ease-out-quint hover:-translate-y-0.5 hover:shadow-md ${tone}`}
       >
         {inner}
       </Link>

@@ -10,24 +10,35 @@ const TABS = [
 
 export default function AdminNav() {
   return (
-    <nav className="flex flex-wrap items-center gap-2 border-b border-koko-border pb-3 mb-6 no-print">
-      <span className="badge-error mr-1">Platform admin</span>
-      {TABS.map((t) => (
-        <NavLink
-          key={t.to}
-          to={t.to}
-          end={t.end}
-          className={({ isActive }) =>
-            `rounded-lg px-3 py-1.5 text-sm font-medium transition ${
+    <div className="mb-6 no-print">
+      <nav className="flex flex-wrap items-center gap-2 pb-3">
+        <span className="badge-error mr-1">Platform admin</span>
+        {TABS.map((t) => (
+          <NavLink
+            key={t.to}
+            to={t.to}
+            end={t.end}
+            className={({ isActive }) =>
+              `rounded-lg px-3 py-1.5 text-sm font-medium transition-all duration-150 ease-out ${
+                isActive
+                  ? 'text-white shadow-button'
+                  : 'text-koko-body hover:text-koko-navy hover:bg-koko-borderSoft'
+              }`
+            }
+            style={({ isActive }) =>
               isActive
-                ? 'bg-koko-navy text-white shadow-sm'
-                : 'text-koko-body hover:text-koko-navy hover:bg-koko-borderSoft'
-            }`
-          }
-        >
-          {t.label}
-        </NavLink>
-      ))}
-    </nav>
+                ? {
+                    backgroundImage:
+                      'linear-gradient(135deg, #003366 0%, #1A4D80 100%)'
+                  }
+                : undefined
+            }
+          >
+            {t.label}
+          </NavLink>
+        ))}
+      </nav>
+      <div className="hairline" />
+    </div>
   );
 }

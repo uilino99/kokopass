@@ -58,7 +58,11 @@ export default function PhotoUpload({
   return (
     <div className={className}>
       <div
-        className={`relative overflow-hidden rounded-2xl border border-dashed border-koko-border bg-koko-bg/60 ${aspectClass[aspect] || ''}`}
+        className={`relative overflow-hidden rounded-2xl border border-dashed border-koko-border/80 shadow-sm transition-colors ${aspectClass[aspect] || ''}`}
+        style={{
+          backgroundImage:
+            'linear-gradient(180deg, rgba(250,251,248,0.7) 0%, rgba(245,247,242,0.7) 100%)'
+        }}
       >
         {value ? (
           <img
@@ -71,10 +75,10 @@ export default function PhotoUpload({
           <button
             type="button"
             onClick={pick}
-            className="absolute inset-0 grid place-items-center text-center text-sm text-koko-muted transition hover:bg-koko-borderSoft hover:text-koko-navy"
+            className="group absolute inset-0 grid place-items-center text-center text-sm text-koko-muted transition-all duration-200 ease-out-quint hover:bg-koko-teal100/30 hover:text-koko-navy"
           >
             <div>
-              <div className="mx-auto grid h-10 w-10 place-items-center rounded-full bg-koko-teal100 text-koko-teal">
+              <div className="mx-auto grid h-10 w-10 place-items-center rounded-full bg-koko-teal100 text-koko-teal shadow-sm transition-transform duration-200 group-hover:scale-110">
                 📷
               </div>
               <p className="mt-2 font-medium text-koko-ink">{label}</p>

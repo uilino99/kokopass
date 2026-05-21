@@ -23,21 +23,28 @@ export default function OfflineBanner() {
   if (online && !showRecover) return null;
 
   const offlineTone =
-    'border-koko-warning/50 bg-koko-warningBg text-koko-warning';
+    'border-koko-warning/40 text-koko-warning';
   const recoverTone =
-    'border-koko-success/40 bg-koko-successBg text-koko-success';
+    'border-koko-success/40 text-koko-success';
 
   return (
     <div
       role="status"
-      className={`sticky top-16 z-20 mx-3 mt-3 rounded-xl border px-3 py-2 text-xs font-medium shadow-sm animate-slide-up no-print ${
+      className={`sticky top-16 z-20 mx-3 mt-3 rounded-2xl border px-3 py-2 text-xs font-medium shadow-md animate-slide-up no-print ${
         online ? recoverTone : offlineTone
       }`}
+      style={{
+        background: online
+          ? 'rgba(231, 245, 238, 0.85)'
+          : 'rgba(254, 243, 199, 0.88)',
+        backdropFilter: 'saturate(140%) blur(8px)',
+        WebkitBackdropFilter: 'saturate(140%) blur(8px)'
+      }}
     >
       <div className="mx-auto flex max-w-6xl items-center gap-2">
         <span
-          className={`grid h-5 w-5 place-items-center rounded-full text-[11px] font-bold ${
-            online ? 'bg-koko-success text-white' : 'bg-koko-warning text-white'
+          className={`grid h-5 w-5 place-items-center rounded-full text-[11px] font-bold text-white shadow-sm ${
+            online ? 'bg-koko-success' : 'bg-koko-warning'
           }`}
         >
           {online ? '✓' : '⚡'}

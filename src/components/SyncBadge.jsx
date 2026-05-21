@@ -15,7 +15,7 @@ export default function SyncBadge({ pending = 0 }) {
   if (pending > 0) {
     return (
       <span
-        className="inline-flex items-center gap-2 rounded-full border border-koko-warning/40 bg-koko-warningBg px-3 py-1.5 text-xs font-semibold text-koko-warning"
+        className="inline-flex items-center gap-2 rounded-full border border-koko-warning/30 bg-koko-warningBg/90 px-3 py-1.5 text-xs font-semibold text-koko-warning shadow-sm"
         role="status"
         aria-live="polite"
       >
@@ -28,11 +28,11 @@ export default function SyncBadge({ pending = 0 }) {
   if (!online) {
     return (
       <span
-        className="inline-flex items-center gap-2 rounded-full border border-koko-border bg-koko-bg/80 px-3 py-1.5 text-xs font-semibold text-koko-muted"
+        className="inline-flex items-center gap-2 rounded-full border border-koko-borderSoft bg-white/80 px-3 py-1.5 text-xs font-semibold text-koko-muted shadow-sm"
         role="status"
         aria-live="polite"
       >
-        <span className="grid h-4 w-4 place-items-center rounded-full bg-koko-warning text-[10px] font-bold text-white">
+        <span className="grid h-4 w-4 place-items-center rounded-full bg-koko-warning text-[10px] font-bold text-white shadow-sm">
           ⚡
         </span>
         Offline · queued
@@ -42,11 +42,11 @@ export default function SyncBadge({ pending = 0 }) {
 
   return (
     <span
-      className="inline-flex items-center gap-2 rounded-full border border-koko-success/40 bg-koko-successBg px-3 py-1.5 text-xs font-semibold text-koko-success"
+      className="inline-flex items-center gap-2 rounded-full border border-koko-success/30 bg-koko-successBg/90 px-3 py-1.5 text-xs font-semibold text-koko-success shadow-sm"
       role="status"
       aria-live="polite"
     >
-      <span className="grid h-4 w-4 place-items-center rounded-full bg-koko-success text-[10px] font-bold text-white">
+      <span className="grid h-4 w-4 place-items-center rounded-full bg-koko-success text-[10px] font-bold text-white shadow-sm">
         ✓
       </span>
       All synced
